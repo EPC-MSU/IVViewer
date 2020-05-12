@@ -6,6 +6,8 @@ setup(
     name="ivviewer",
     packages=find_packages(),
     install_requires=[
-        "PyQt5>=5.8.2, <=5.14.0",  # for QImage and other ...
+        "PyQt5>=5.8.2, <=5.14.0",
+        "numpy",
+        "qwt"
     ]
 )
