@@ -7,8 +7,6 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QPen, QBrush, QColor, QFont
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText
 
-from .ivcviewerconstants import Voltage, Current, adjust_scale
-
 Curve = namedtuple("Curve", ("x", "y", ))
 
 
@@ -159,9 +157,6 @@ class IvcViewer(QwtPlot):
         self._voltage_scale = voltage
         self._current_scale = current
         self.__adjust_scale()
-
-    def set_scale_const(self, voltage: Voltage, current: Current):
-        self.set_scale(*adjust_scale(voltage, current))
 
 
 def _plot_curve(curve: Optional[tuple], curve_plot: QwtPlotCurve) -> None:

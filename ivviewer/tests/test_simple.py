@@ -4,7 +4,6 @@ from PyQt5.QtWidgets import QApplication
 import sys
 
 from ivviewer import Viewer, Curve
-from ivviewer.ivcviewerconstants import adjust_scale, Current, Voltage
 
 
 class IVViewerTest(unittest.TestCase):
@@ -19,7 +18,7 @@ class IVViewerTest(unittest.TestCase):
         x2 = [-2.5, 0, 2.5]
         y2 = [-3, 0, 3]
 
-        window.plot.set_scale(*adjust_scale(Voltage.VOLTAGE_3_3V, Current.CURRENT_25MA))
+        window.plot.set_scale(14.0, 28.0)
         window.plot.set_test_curve(Curve(x, y))
         window.plot.set_reference_curve(Curve(x2, y2))
         app.exit(0)
