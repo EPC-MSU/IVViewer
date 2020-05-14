@@ -165,7 +165,7 @@ def _plot_curve(curve: Optional[tuple], curve_plot: QwtPlotCurve) -> None:
     else:
         # Get curves and close the loop
         voltages = np.append(curve[0], curve[0][0])
-        currents = np.append(curve[1], curve[1][0])
+        currents = np.append(curve[1], curve[1][0]) * 1000
 
         # Setting curve data: (voltage [V], current [mA])
         curve_plot.setData(voltages, currents)
