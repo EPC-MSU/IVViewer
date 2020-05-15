@@ -8,6 +8,7 @@ setup(
     install_requires=[
         "PyQt5>=5.8.2, <=5.14.0",
         "numpy",
-        "PythonQwt"
+        "PythonQwt",
+        "dataclasses"
     ]
 )

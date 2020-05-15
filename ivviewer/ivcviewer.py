@@ -1,13 +1,19 @@
 from typing import Optional, Tuple
 
 import numpy as np
-from collections import namedtuple
+from dataclasses import dataclass
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPen, QBrush, QColor, QFont
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText
 
-Curve = namedtuple("Curve", ("voltages", "currents", ))
+from typing import List
+
+
+@dataclass
+class Curve:
+    voltages: List[float]
+    currents: List[float]
 
 
 __all__ = ["IvcViewer"]
@@ -159,13 +165,13 @@ class IvcViewer(QwtPlot):
         self.__adjust_scale()
 
 
-def _plot_curve(curve: Optional[tuple], curve_plot: QwtPlotCurve) -> None:
+def _plot_curve(curve: Optional[Curve], curve_plot: QwtPlotCurve) -> None:
     if curve is None or curve == (None, None):
         curve_plot.setData((), ())
     else:
         # Get curves and close the loop
-        voltages = np.append(curve[0], curve[0][0])
-        currents = np.append(curve[1], curve[1][0]) * 1000
+        voltages = np.append(curve.voltages, curve.voltages[0])
+        currents = np.append(curve.currents, curve.currents[0]) * 1000
 
         # Setting curve data: (voltage [V], current [mA])
         curve_plot.setData(voltages, currents)
