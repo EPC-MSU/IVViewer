@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QPen, QBrush, QColor, QFont
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText
 
-Curve = namedtuple("Curve", ("x", "y", ))
+Curve = namedtuple("Curve", ("voltages", "currents", ))
 
 
 __all__ = ["IvcViewer"]
