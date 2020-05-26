@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PyQt5 import QtCore
 from PyQt5.QtGui import QPen, QBrush, QColor, QFont
-from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText
+from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
 
 from typing import List
 
@@ -98,6 +98,20 @@ class IvcViewer(QwtPlot):
 
         self._current_scale = 0.4
         self._voltage_scale = 1.5
+
+        self._texts = []
+
+    def add_text(self, text: str, x: float, y: float):
+        tt = QwtText(text)
+        maker = QwtPlotMarker()
+        maker.setValue(x, y)
+        maker.setLabel(tt)
+        maker.attach(self)
+        self._texts.append(maker)
+
+    def clear_text(self):
+        for t in self._texts:
+            t.detach()
 
     # min_bounds management
     def get_min_borders(self) -> Tuple[float, float]:
