@@ -18,6 +18,8 @@ if __name__ == "__main__":
     window.plot.set_test_curve(Curve(x, y))
     window.plot.set_reference_curve(Curve(x2, y2))
 
+    window.plot.set_center_text("DISCONNECTED")
+
     window.resize(600, 600)
     window.show()
 

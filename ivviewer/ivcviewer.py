@@ -99,19 +99,31 @@ class IvcViewer(QwtPlot):
         self._current_scale = 0.4
         self._voltage_scale = 1.5
 
-        self._texts = []
+        self._text_marker = None
+        self._text = None
 
-    def add_text(self, text: str, x: float, y: float):
+    def set_center_text(self, text: str):
+        if self._text == text:
+            return  # Same text already here
+
+        self.clear_text()  # Clear current text
+
         tt = QwtText(text)
-        maker = QwtPlotMarker()
-        maker.setValue(x, y)
-        maker.setLabel(tt)
-        maker.attach(self)
-        self._texts.append(maker)
+        font = QFont()
+        font.setPointSize(40)
+        tt.setFont(font)
+        tt.setColor(QColor(QtCore.Qt.red))
+        marker = QwtPlotMarker()
+        marker.setValue(0, 0)
+        marker.setLabel(tt)
+        marker.attach(self)
+        self._text_marker = marker
+        self._text = text
 
     def clear_text(self):
-        for t in self._texts:
-            t.detach()
+        if self._text_marker:
+            self._text_marker.detach()
+            self._text = None
 
     # min_bounds management
     def get_min_borders(self) -> Tuple[float, float]:
