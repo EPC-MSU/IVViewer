@@ -157,6 +157,11 @@ class IvcViewer(QwtPlot):
         self.reference_curve_changed.emit()
         self.curve_changed.emit()
 
+    def set_reference_curve_params(self, color: QColor = QColor(255, 0, 0, 200)):
+        self.__reference_curve_plot.setPen(QPen(color, 4))
+        self.reference_curve_changed.emit()
+        self.curve_changed.emit()
+
     # test_curve management
     def get_test_curve(self) -> Optional[Curve]:
         return self.__test_curve
@@ -170,6 +175,11 @@ class IvcViewer(QwtPlot):
     def clear_test_curve(self):
         self.__set_test_curve(None)
         self.__adjust_scale()
+        self.test_curve_changed.emit()
+        self.curve_changed.emit()
+
+    def set_test_curve_params(self, color: QColor = QColor(0, 0, 0, 200)):
+        self.__test_curve_plot.setPen(QPen(color, 4))
         self.test_curve_changed.emit()
         self.curve_changed.emit()
 
