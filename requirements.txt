@@ -1,4 +1,5 @@
-PyQt5<=5.14.2
-numpy
-PythonQwt
-dataclasses
+dataclasses==0.7
+numpy==1.19.1
+PyQt5==5.14.2
+PyQt5-sip==12.8.0
+PythonQwt==0.6.2
