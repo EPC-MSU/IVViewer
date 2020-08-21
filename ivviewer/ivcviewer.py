@@ -54,7 +54,7 @@ class IvcViewer(QwtPlot):
     min_borders_changed = QtCore.pyqtSignal()
 
     def __init__(self, owner, parent=None, grid_color=QColor(0, 0, 0), back_color=QColor(0xe1, 0xed, 0xeb),
-                 text_color=QColor(255, 0, 0)):
+                 text_color=QColor(255, 0, 0), axis_sign_enabled=True):
         super().__init__(parent)
 
         self.__owner = owner
@@ -81,12 +81,13 @@ class IvcViewer(QwtPlot):
         self.x_axis.setPen(black_pen)
         self.x_axis.setData((-m, m), (0, 0))
         self.x_axis.attach(self)
-        self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
         t = QwtText(QtCore.QCoreApplication.translate("t", "\nНапряжение (В)"))
         t.setFont(axis_font)
-        self.setAxisTitle(QwtPlot.xBottom, t)
+        if axis_sign_enabled:
+            self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
+            self.setAxisTitle(QwtPlot.xBottom, t)
 
         # Y Axis
         self.y_axis = QwtPlotCurve()
@@ -95,10 +96,11 @@ class IvcViewer(QwtPlot):
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
-        self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
         t = QwtText(QtCore.QCoreApplication.translate("t", "Ток (мА)\n"))
         t.setFont(axis_font)
-        self.setAxisTitle(QwtPlot.yLeft, t)
+        if axis_sign_enabled:
+            self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
+            self.setAxisTitle(QwtPlot.yLeft, t)
 
         # Initial setup for axis scales
         self.__min_border_voltage = abs(float(IvcViewer.min_border_voltage))
