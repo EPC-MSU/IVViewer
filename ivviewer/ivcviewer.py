@@ -19,17 +19,42 @@ class Curve:
 __all__ = ["IvcViewer"]
 
 
+class PlotCurve(QwtPlotCurve):
+
+    def __init__(self, owner, parent=None):
+        super().__init__(parent)
+        self.curve = None
+        self.parent = parent
+        self.owner = owner
+
+    def get_curve(self) -> Optional[Curve]:
+        return self.curve
+
+    def set_curve(self, curve: Optional[Curve]):
+        self.__set_curve(curve)
+        self.owner._IvcViewer__adjust_scale()
+
+    def clear_curve(self):
+        self.__set_curve(None)
+        self.owner._IvcViewer__adjust_scale()
+
+    def set_curve_params(self, color: QColor = QColor(0, 0, 0, 200)):
+        self.setPen(QPen(color, 4))
+
+    def __set_curve(self, curve: Optional[Curve] = None):
+        self.curve = curve
+        _plot_curve(self)
+
+
 class IvcViewer(QwtPlot):
     min_border_voltage = 1.0
     min_border_current = 0.5
+    curves = []
 
     min_borders_changed = QtCore.pyqtSignal()
 
-    reference_curve_changed = QtCore.pyqtSignal()  # Reference curve changed
-    test_curve_changed = QtCore.pyqtSignal()  # Test curve changed
-    curve_changed = QtCore.pyqtSignal()  # Reference or test curve changed
-
-    def __init__(self, owner, parent=None):
+    def __init__(self, owner, parent=None, grid_color=QColor(0, 0, 0), back_color=QColor(0xe1, 0xed, 0xeb),
+                 text_color=QColor(255, 0, 0)):
         super().__init__(parent)
 
         self.__owner = owner
@@ -37,34 +62,25 @@ class IvcViewer(QwtPlot):
         self.__grid.enableXMin(True)
         self.__grid.enableYMin(True)
         self.__grid.setMajorPen(QPen(
-            QColor(0, 0, 0), 0, QtCore.Qt.SolidLine))
+            grid_color, 0, QtCore.Qt.SolidLine))
         self.__grid.setMinorPen(QPen(
             QColor(128, 128, 128), 0, QtCore.Qt.DotLine))
         # self.__grid.updateScaleDiv(20, 30)
         self.__grid.attach(self)
-
+        self.text_color = text_color
         # WTF?! TODO: Refactor m away!
         m = 640000  # Is said to be enough for anybody
-        black_pen = QPen(QColor(0, 0, 0), 2)
+        black_pen = QPen(grid_color, 2)
 
         axis_font = QFont()
         axis_font.pointSize = 20
-        self.setCanvasBackground(QBrush(QColor(0xe1, 0xed, 0xeb), 1))
-        self.__reference_curve = None
-        self.__reference_curve_plot = QwtPlotCurve()
-        self.__reference_curve_plot.setPen(QPen(QColor(255, 0, 0, 200), 4))
-        self.__reference_curve_plot.attach(self)
-
-        self.__test_curve = None
-        self.__test_curve_plot = QwtPlotCurve()
-        self.__test_curve_plot.setPen(QPen(QColor(0, 0, 0, 200), 4))
-        self.__test_curve_plot.attach(self)
+        self.setCanvasBackground(QBrush(back_color, 1))
 
         # X Axis
-        x_axis = QwtPlotCurve()
-        x_axis.setPen(black_pen)
-        x_axis.setData((-m, m), (0, 0))
-        x_axis.attach(self)
+        self.x_axis = QwtPlotCurve()
+        self.x_axis.setPen(black_pen)
+        self.x_axis.setData((-m, m), (0, 0))
+        self.x_axis.attach(self)
         self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
@@ -73,10 +89,10 @@ class IvcViewer(QwtPlot):
         self.setAxisTitle(QwtPlot.xBottom, t)
 
         # Y Axis
-        y_axis = QwtPlotCurve()
-        y_axis.setPen(black_pen)
-        y_axis.setData((0, 0), (-m, m))
-        y_axis.attach(self)
+        self.y_axis = QwtPlotCurve()
+        self.y_axis.setPen(black_pen)
+        self.y_axis.setData((0, 0), (-m, m))
+        self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
         self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
@@ -107,12 +123,16 @@ class IvcViewer(QwtPlot):
             return  # Same text already here
 
         self.clear_text()  # Clear current text
-
+        self.y_axis.detach()
+        self.x_axis.detach()
+        self.__grid.detach()
+        for curve in self.curves:
+            curve.detach()
         tt = QwtText(text)
         font = QFont()
         font.setPointSize(40)
         tt.setFont(font)
-        tt.setColor(QColor(QtCore.Qt.red))
+        tt.setColor(self.text_color)
         marker = QwtPlotMarker()
         marker.setValue(0, 0)
         marker.setLabel(tt)
@@ -141,55 +161,11 @@ class IvcViewer(QwtPlot):
         self.__adjust_scale()
         self.min_borders_changed.emit()
 
-    # reference_curve management
-    def get_reference_curve(self) -> Optional[Curve]:
-        return self.__reference_curve
-
-    def set_reference_curve(self, reference_curve: Optional[Curve]):
-        self.__set_reference_curve(reference_curve)
-        self.__adjust_scale()
-        self.reference_curve_changed.emit()
-        self.curve_changed.emit()
-
-    def clear_reference_curve(self):
-        self.__set_reference_curve(None)
-        self.__adjust_scale()
-        self.reference_curve_changed.emit()
-        self.curve_changed.emit()
-
-    def set_reference_curve_params(self, color: QColor = QColor(255, 0, 0, 200)):
-        self.__reference_curve_plot.setPen(QPen(color, 4))
-        self.reference_curve_changed.emit()
-        self.curve_changed.emit()
-
-    # test_curve management
-    def get_test_curve(self) -> Optional[Curve]:
-        return self.__test_curve
-
-    def set_test_curve(self, test_curve: Optional[Curve] = None):
-        self.__set_test_curve(test_curve)
-        self.__adjust_scale()
-        self.test_curve_changed.emit()
-        self.curve_changed.emit()
-
-    def clear_test_curve(self):
-        self.__set_test_curve(None)
-        self.__adjust_scale()
-        self.test_curve_changed.emit()
-        self.curve_changed.emit()
-
-    def set_test_curve_params(self, color: QColor = QColor(0, 0, 0, 200)):
-        self.__test_curve_plot.setPen(QPen(color, 4))
-        self.test_curve_changed.emit()
-        self.curve_changed.emit()
-
-    def __set_reference_curve(self, reference_curve: Optional[Curve] = None):
-        self.__reference_curve = reference_curve
-        _plot_curve(self.__reference_curve, self.__reference_curve_plot)
-
-    def __set_test_curve(self, test_curve: Optional[Curve] = None):
-        self.__test_curve = test_curve
-        _plot_curve(self.__test_curve, self.__test_curve_plot)
+    def add_curve(self) -> PlotCurve:
+        self.curves.append(PlotCurve(self))
+        self.curves[-1].setPen(QPen(QColor(255, 0, 0, 200), 4))
+        self.curves[-1].attach(self)
+        return self.curves[-1]
 
     def __adjust_scale(self):
         self.setAxisScale(QwtPlot.xBottom, -self._voltage_scale, self._voltage_scale)
@@ -201,13 +177,13 @@ class IvcViewer(QwtPlot):
         self.__adjust_scale()
 
 
-def _plot_curve(curve: Optional[Curve], curve_plot: QwtPlotCurve) -> None:
-    if curve is None or curve == (None, None):
+def _plot_curve(curve_plot: PlotCurve) -> None:
+    if curve_plot.curve is None or curve_plot.curve == (None, None):
         curve_plot.setData((), ())
     else:
         # Get curves and close the loop
-        voltages = np.append(curve.voltages, curve.voltages[0])
-        currents = np.append(curve.currents, curve.currents[0]) * 1000
+        voltages = np.append(curve_plot.curve.voltages, curve_plot.curve.voltages[0])
+        currents = np.append(curve_plot.curve.currents, curve_plot.curve.currents[0]) * 1000
 
         # Setting curve data: (voltage [V], current [mA])
         curve_plot.setData(voltages, currents)
