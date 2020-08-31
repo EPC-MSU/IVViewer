@@ -4,6 +4,7 @@ import numpy as np
 from dataclasses import dataclass
 
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPen, QBrush, QColor, QFont
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
 
@@ -53,7 +54,9 @@ class IvcViewer(QwtPlot):
 
     min_borders_changed = QtCore.pyqtSignal()
 
-    def __init__(self, owner, parent=None, grid_color=QColor(0, 0, 0), back_color=QColor(0xe1, 0xed, 0xeb),
+    def __init__(self, owner, parent=None,
+                 solid_axis_enabled=True,
+                 grid_color=QColor(0, 0, 0), back_color=QColor(0xe1, 0xed, 0xeb),
                  text_color=QColor(255, 0, 0), axis_sign_enabled=True):
         super().__init__(parent)
 
@@ -61,46 +64,49 @@ class IvcViewer(QwtPlot):
         self.__grid = QwtPlotGrid()
         self.__grid.enableXMin(True)
         self.__grid.enableYMin(True)
-        self.__grid.setMajorPen(QPen(
-            grid_color, 0, QtCore.Qt.SolidLine))
+        if solid_axis_enabled:
+            self.__grid.setMajorPen(QPen(
+                grid_color, 0, QtCore.Qt.SolidLine))
+        else:
+            self.__grid.setMajorPen(QPen(
+                QColor(128, 128, 128), 0, QtCore.Qt.DotLine))
         self.__grid.setMinorPen(QPen(
             QColor(128, 128, 128), 0, QtCore.Qt.DotLine))
         # self.__grid.updateScaleDiv(20, 30)
         self.__grid.attach(self)
         self.text_color = text_color
+        self.grid_color = grid_color
         # WTF?! TODO: Refactor m away!
         m = 640000  # Is said to be enough for anybody
-        black_pen = QPen(grid_color, 2)
 
         axis_font = QFont()
         axis_font.pointSize = 20
         self.setCanvasBackground(QBrush(back_color, 1))
 
+        axis_pen = QPen(self.grid_color, 2)
         # X Axis
         self.x_axis = QwtPlotCurve()
-        self.x_axis.setPen(black_pen)
+        self.x_axis.setPen(axis_pen)
         self.x_axis.setData((-m, m), (0, 0))
         self.x_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
-        t = QwtText(QtCore.QCoreApplication.translate("t", "\nНапряжение (В)"))
-        t.setFont(axis_font)
-        if axis_sign_enabled:
-            self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
-            self.setAxisTitle(QwtPlot.xBottom, t)
-
         # Y Axis
         self.y_axis = QwtPlotCurve()
-        self.y_axis.setPen(black_pen)
+        self.y_axis.setPen(axis_pen)
         self.y_axis.setData((0, 0), (-m, m))
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
-        t = QwtText(QtCore.QCoreApplication.translate("t", "Ток (мА)\n"))
-        t.setFont(axis_font)
         if axis_sign_enabled:
+            t_x = QwtText(QtCore.QCoreApplication.translate("t", "\nНапряжение (В)"))
+            t_x.setFont(axis_font)
+            self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
+            self.setAxisTitle(QwtPlot.xBottom, t_x)
+            t_y = QwtText(QtCore.QCoreApplication.translate("t", "Ток (мА)\n"))
+            t_y.setFont(axis_font)
             self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
-            self.setAxisTitle(QwtPlot.yLeft, t)
+            self.setAxisTitle(QwtPlot.yLeft, t_y)
 
         # Initial setup for axis scales
         self.__min_border_voltage = abs(float(IvcViewer.min_border_voltage))
@@ -117,14 +123,16 @@ class IvcViewer(QwtPlot):
         self._current_scale = 0.4
         self._voltage_scale = 1.5
 
-        self._text_marker = None
-        self._text = None
+        self._lower_text_marker = None
+        self._center_text_marker = None
+        self._center_text = None
+        self._lower_text = None
 
     def set_center_text(self, text: str):
-        if self._text == text:
+        if self._center_text == text:
             return  # Same text already here
 
-        self.clear_text()  # Clear current text
+        self.clear_center_text()  # Clear current text
         self.y_axis.detach()
         self.x_axis.detach()
         self.__grid.detach()
@@ -139,13 +147,39 @@ class IvcViewer(QwtPlot):
         marker.setValue(0, 0)
         marker.setLabel(tt)
         marker.attach(self)
-        self._text_marker = marker
-        self._text = text
+        self._center_text_marker = marker
+        self._center_text = text
 
-    def clear_text(self):
-        if self._text_marker:
-            self._text_marker.detach()
-            self._text = None
+    def set_lower_text(self, text: str):
+        if self._lower_text == text:
+            return  # Same text already here
+
+        self.clear_lower_text()  # Clear current text
+        tt = QwtText(text)
+        font = QFont()
+        font.setPointSize(10)
+        tt.setFont(font)
+        tt.setColor(self.grid_color)
+        marker = QwtPlotMarker()
+        marker.setValue(-self._voltage_scale, -self._current_scale)
+        marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        marker.setLabel(tt)
+        marker.attach(self)
+        self._lower_text_marker = marker
+        self._lower_text = text
+
+    def clear_center_text(self):
+        if self._center_text_marker:
+            self._center_text_marker.detach()
+            self._center_text = None
+
+    def clear_lower_text(self):
+        if self._lower_text_marker:
+            self._lower_text_marker.detach()
+            self._lower_text = None
+
+    def get_axis_step(self):
+        return self._voltage_scale, self._current_scale
 
     # min_bounds management
     def get_min_borders(self) -> Tuple[float, float]:
@@ -172,6 +206,12 @@ class IvcViewer(QwtPlot):
     def __adjust_scale(self):
         self.setAxisScale(QwtPlot.xBottom, -self._voltage_scale, self._voltage_scale)
         self.setAxisScale(QwtPlot.yLeft, -self._current_scale, self._current_scale)
+        self.__update_align_lower_text()
+
+    def __update_align_lower_text(self):
+        if not self._lower_text:
+            return
+        self._lower_text_marker.setValue(-self._voltage_scale, -self._current_scale)
 
     def set_scale(self, voltage: float, current: float):
         self._voltage_scale = voltage
