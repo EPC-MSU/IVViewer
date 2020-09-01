@@ -77,7 +77,7 @@ class IvcViewer(QwtPlot):
         self.text_color = text_color
         self.grid_color = grid_color
         # WTF?! TODO: Refactor m away!
-        m = 640000  # Is said to be enough for anybody
+        m = 1000  # Is said to be enough for anybody
 
         axis_font = QFont()
         axis_font.pointSize = 20
