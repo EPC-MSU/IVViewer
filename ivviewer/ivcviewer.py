@@ -178,8 +178,16 @@ class IvcViewer(QwtPlot):
             self._lower_text_marker.detach()
             self._lower_text = None
 
-    def get_axis_step(self):
-        return self._voltage_scale, self._current_scale
+    def get_minor_axis_step(self):
+        """
+        Function return width and height of rectangle of minor axes
+        :return: width, height
+        """
+        xmap = self.__grid.xScaleDiv().ticks(self.__grid.xScaleDiv().MinorTick)
+        ymap = self.__grid.yScaleDiv().ticks(self.__grid.yScaleDiv().MinorTick)
+        x_step = min([round(xmap[i + 1] - xmap[i], 2) for i in range(len(xmap) - 1)])
+        y_step = min([round(ymap[i + 1] - ymap[i], 2) for i in range(len(ymap) - 1)])
+        return x_step, y_step
 
     # min_bounds management
     def get_min_borders(self) -> Tuple[float, float]:
