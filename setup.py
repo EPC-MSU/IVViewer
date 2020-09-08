@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 
 setup(
-    version="0.1.2",
+    version="0.1.4",
     name="ivviewer",
     packages=find_packages(),
     install_requires=[
