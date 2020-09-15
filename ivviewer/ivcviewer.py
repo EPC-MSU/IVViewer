@@ -160,6 +160,7 @@ class IvcViewer(QwtPlot):
         font.setPointSize(10)
         tt.setFont(font)
         tt.setColor(self.grid_color)
+        tt.setRenderFlags(QtCore.Qt.AlignLeft)
         marker = QwtPlotMarker()
         marker.setValue(-self._voltage_scale, -self._current_scale)
         marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
