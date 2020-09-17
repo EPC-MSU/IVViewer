@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QBrush, QColor, QFont
+from PyQt5.QtGui import QPen, QBrush, QColor, QFont, QCursor
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
 
 from typing import List
@@ -82,7 +82,7 @@ class IvcViewer(QwtPlot):
         axis_font = QFont()
         axis_font.pointSize = 20
         self.setCanvasBackground(QBrush(back_color, 1))
-
+        self.canvas().setCursor(QCursor(Qt.ArrowCursor))
         axis_pen = QPen(self.grid_color, 2)
         # X Axis
         self.x_axis = QwtPlotCurve()
@@ -98,15 +98,17 @@ class IvcViewer(QwtPlot):
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
-        if axis_sign_enabled:
-            t_x = QwtText(QtCore.QCoreApplication.translate("t", "\nНапряжение (В)"))
-            t_x.setFont(axis_font)
-            self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
-            self.setAxisTitle(QwtPlot.xBottom, t_x)
-            t_y = QwtText(QtCore.QCoreApplication.translate("t", "Ток (мА)\n"))
-            t_y.setFont(axis_font)
-            self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
-            self.setAxisTitle(QwtPlot.yLeft, t_y)
+        t_x = QwtText(QtCore.QCoreApplication.translate("t", "\nНапряжение (В)"))
+        t_x.setFont(axis_font)
+        self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
+        self.setAxisTitle(QwtPlot.xBottom, t_x)
+        t_y = QwtText(QtCore.QCoreApplication.translate("t", "Ток (мА)\n"))
+        t_y.setFont(axis_font)
+        self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
+        self.setAxisTitle(QwtPlot.yLeft, t_y)
+        if not axis_sign_enabled:
+            self.enableAxis(QwtPlot.xBottom, False)
+            self.enableAxis(QwtPlot.yLeft, False)
 
         # Initial setup for axis scales
         self.__min_border_voltage = abs(float(IvcViewer.min_border_voltage))
@@ -119,7 +121,6 @@ class IvcViewer(QwtPlot):
             QwtPlot.yLeft,
             -self.__min_border_current,
             self.__min_border_current)
-
         self._current_scale = 0.4
         self._voltage_scale = 1.5
 
@@ -163,6 +164,7 @@ class IvcViewer(QwtPlot):
         tt.setRenderFlags(QtCore.Qt.AlignLeft)
         marker = QwtPlotMarker()
         marker.setValue(-self._voltage_scale, -self._current_scale)
+        marker.setSpacing(10)
         marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         marker.setLabel(tt)
         marker.attach(self)
