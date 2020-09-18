@@ -24,7 +24,9 @@ class IVViewerTest(unittest.TestCase):
         test_curve.set_curve(Curve(x, y))
         reference_curve.set_curve(Curve(x2, y2))
 
-        app.exit(0)
+        window.show()
+        app.exec()
+
         self.assertTrue(True)
 
     def test_color_setup(self):
@@ -46,7 +48,9 @@ class IVViewerTest(unittest.TestCase):
         reference_curve.set_curve_params(color=QColor(0, 255, 255, 200))
         test_curve.set_curve_params(color=QColor(255, 0, 255, 400))
 
-        app.exit(0)
+        window.show()
+        app.exec()
+
         self.assertTrue(True)
 
     def test_three_curves(self):
@@ -57,13 +61,13 @@ class IVViewerTest(unittest.TestCase):
         second_curve = window.plot.add_curve()
         third_curve = window.plot.add_curve()
 
-        x = [-2.5, 0, 2.5]
+        x = [0, 1, 2]
         y = [-5, 0, 5]
 
-        x2 = [-2.5, 0, 2.5]
+        x2 = [1, 2, 3]
         y2 = [-3, 0, 3]
 
-        x3 = [-2.5, 0, 2.5]
+        x3 = [2, 3, 4]
         y3 = [-1, 0, 1]
 
         first_curve.set_curve(Curve(x, y))
@@ -72,5 +76,7 @@ class IVViewerTest(unittest.TestCase):
 
         third_curve.set_curve_params(color=QColor(255, 0, 255, 400))
 
-        app.exit(0)
+        window.show()
+        app.exec()
+
         self.assertTrue(True)
