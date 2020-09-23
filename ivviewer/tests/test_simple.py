@@ -11,14 +11,15 @@ class IVViewerTest(unittest.TestCase):
     def test_little_bit(self):
         app = QApplication(sys.argv)
         window = Viewer()
+        window.setFixedSize(600, 600)
         test_curve = window.plot.add_curve()
         reference_curve = window.plot.add_curve()
 
         x = [-2.5, 0, 2.5]
-        y = [-5, 0, 5]
+        y = [-0.005, 0, 0.005]
 
         x2 = [-2.5, 0, 2.5]
-        y2 = [-3, 0, 3]
+        y2 = [-0.003, 0, 0.003]
 
         window.plot.set_scale(14.0, 28.0)
         test_curve.set_curve(Curve(x, y))
@@ -33,14 +34,15 @@ class IVViewerTest(unittest.TestCase):
         app = QApplication(sys.argv)
 
         window = Viewer()
+        window.setFixedSize(600, 600)
         test_curve = window.plot.add_curve()
         reference_curve = window.plot.add_curve()
 
         x = [-2.5, 0, 2.5]
-        y = [-5, 0, 5]
+        y = [0.005, 0, 0.005]
 
         x2 = [-2.5, 0, 2.5]
-        y2 = [-3, 0, 3]
+        y2 = [-0.003, 0, 0.003]
 
         test_curve.set_curve(Curve(x, y))
         reference_curve.set_curve(Curve(x2, y2))
@@ -57,24 +59,27 @@ class IVViewerTest(unittest.TestCase):
         app = QApplication(sys.argv)
 
         window = Viewer()
+        window.setFixedSize(600, 600)
+
         first_curve = window.plot.add_curve()
         second_curve = window.plot.add_curve()
         third_curve = window.plot.add_curve()
-
         x = [0, 1, 2]
-        y = [-5, 0, 5]
+        y = [-0.005, 0, 0.005]
 
-        x2 = [1, 2, 3]
-        y2 = [-3, 0, 3]
+        x2 = [3, 2, 5]
+        y2 = [-0.003, 0, 0.003]
 
         x3 = [2, 3, 4]
-        y3 = [-1, 0, 1]
+        y3 = [-0.001, 0, 0.001]
 
         first_curve.set_curve(Curve(x, y))
         second_curve.set_curve(Curve(x2, y2))
         third_curve.set_curve(Curve(x3, y3))
-
-        third_curve.set_curve_params(color=QColor(255, 0, 255, 400))
+        window.plot.set_scale(10.0, 20.0)
+        first_curve.set_curve_params(color=QColor(255, 0, 255, 200))
+        second_curve.set_curve_params(color=QColor(0, 255, 255, 200))
+        third_curve.set_curve_params(color=QColor(255, 255, 0, 200))
 
         window.show()
         app.exec()
