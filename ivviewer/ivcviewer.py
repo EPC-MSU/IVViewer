@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QBrush, QColor, QFont, QCursor
+from PyQt5.QtGui import QPen, QBrush, QColor, QFont  # , QCursor
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
 
 from typing import List
