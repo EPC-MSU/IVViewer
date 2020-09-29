@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QBrush, QColor, QFont, QCursor
+from PyQt5.QtGui import QPen, QBrush, QColor, QFont  # , QCursor
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
 
 from typing import List
@@ -82,7 +82,7 @@ class IvcViewer(QwtPlot):
         axis_font = QFont()
         axis_font.pointSize = 20
         self.setCanvasBackground(QBrush(back_color, 1))
-        # self.canvas().setCursor(QCursor(Qt.ArrowCursor))
+        self.canvas().setCursor(QCursor(Qt.ArrowCursor))
         axis_pen = QPen(self.grid_color, 2)
         # X Axis
         self.x_axis = QwtPlotCurve()
