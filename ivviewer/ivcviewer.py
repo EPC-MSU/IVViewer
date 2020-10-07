@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QBrush, QColor, QFont  # , QCursor
+from PyQt5.QtGui import QPen, QBrush, QColor, QFont, QCursor
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
 
 from typing import List
@@ -47,10 +47,48 @@ class PlotCurve(QwtPlotCurve):
         _plot_curve(self)
 
 
+class IvcCursor:
+    x_axis = QwtPlotCurve()
+    y_axis = QwtPlotCurve()
+    sign = QwtPlotMarker()
+    color = QColor(255, 0, 0)
+
+    def __init__(self, plot, x, y):
+        m = 10000
+        pen = QPen(self.color, 2, QtCore.Qt.DotLine)
+        self.point = (x, y)
+        self.x_axis.setPen(pen)
+        self.x_axis.setData((x, x), (-m, m))
+        self.y_axis.setPen(pen)
+        self.y_axis.setData((-m, m), (y, y))
+        tt = QwtText("x = {}, y = {}".format(x, y))
+        font = QFont()
+        font.setPointSize(8)
+        tt.setFont(font)
+        tt.setColor(self.color)
+        tt.setRenderFlags(QtCore.Qt.AlignLeft)
+        self.sign.setValue(x, y)
+        self.sign.setSpacing(10)
+        self.sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        self.sign.setLabel(tt)
+        self.attach(plot)
+
+    def attach(self, plot):
+        self.x_axis.attach(plot)
+        self.y_axis.attach(plot)
+        self.sign.attach(plot)
+
+    def __del__(self):
+        self.x_axis.detach()
+        self.y_axis.detach()
+        self.sign.detach()
+
+
 class IvcViewer(QwtPlot):
     min_border_voltage = 1.0
     min_border_current = 0.5
     curves = []
+    cursors = []
 
     min_borders_changed = QtCore.pyqtSignal()
 
@@ -82,7 +120,7 @@ class IvcViewer(QwtPlot):
         axis_font = QFont()
         axis_font.pointSize = 20
         self.setCanvasBackground(QBrush(back_color, 1))
-        # self.canvas().setCursor(QCursor(Qt.ArrowCursor))
+        self.canvas().setCursor(QCursor(Qt.ArrowCursor))
         axis_pen = QPen(self.grid_color, 2)
         # X Axis
         self.x_axis = QwtPlotCurve()
@@ -128,6 +166,30 @@ class IvcViewer(QwtPlot):
         self._center_text_marker = None
         self._center_text = None
         self._lower_text = None
+        self._add_cursor_mode = False
+        self._remove_cursor_mode = False
+
+    def activate_adding_cursor(self):
+        self._add_cursor_mode = True
+
+    def activate_removing_cursor(self):
+        self._remove_cursor_mode = True
+
+    def mousePressEvent(self, event):
+        x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
+        y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
+        if self._add_cursor_mode:
+            if event.button() == Qt.LeftButton:
+                self.cursors.append(IvcCursor(self, x, y))
+                self._add_cursor_mode = False
+                event.accept()
+        elif self._remove_cursor_mode:
+            if event.button() == Qt.LeftButton:
+                for cursor in self.cursors:
+                    if np.abs(cursor.point[0] - x) < 0.1 and np.abs(cursor.point[1] - y) < 0.1:
+                        self.cursors.remove(cursor)
+                self._remove_cursor_mode = False
+                event.accept()
 
     def set_center_text(self, text: str):
         if self._center_text == text:
