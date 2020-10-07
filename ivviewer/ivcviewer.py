@@ -47,48 +47,76 @@ class PlotCurve(QwtPlotCurve):
         _plot_curve(self)
 
 
-class IvcCursor:
-    x_axis = QwtPlotCurve()
-    y_axis = QwtPlotCurve()
-    sign = QwtPlotMarker()
-    color = QColor(255, 0, 0)
+class IvcCursors:
+    x_axes = []
+    y_axes = []
+    signatures = []
+    points = []
+    current_color = QColor(255, 0, 0)
+    last_color = QColor(255, 0, 255)
 
-    def __init__(self, plot, x, y):
+    def __init__(self, plot):
+        self.plot = plot
+
+    def add_cursor(self, x, y):
         m = 10000
-        pen = QPen(self.color, 2, QtCore.Qt.DotLine)
-        self.point = (x, y)
-        self.x_axis.setPen(pen)
-        self.x_axis.setData((x, x), (-m, m))
-        self.y_axis.setPen(pen)
-        self.y_axis.setData((-m, m), (y, y))
+
+        self.points.append((x, y))
+        self.x_axes.append(QwtPlotCurve())
+        self.y_axes.append(QwtPlotCurve())
+        self.signatures.append(QwtPlotMarker())
         tt = QwtText("x = {}, y = {}".format(x, y))
         font = QFont()
         font.setPointSize(8)
         tt.setFont(font)
-        tt.setColor(self.color)
         tt.setRenderFlags(QtCore.Qt.AlignLeft)
-        self.sign.setValue(x, y)
-        self.sign.setSpacing(10)
-        self.sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
-        self.sign.setLabel(tt)
-        self.attach(plot)
+        self.x_axes[-1].setData((x, x), (-m, m))
+        self.y_axes[-1].setData((-m, m), (y, y))
+        self.signatures[-1].setValue(x, y)
+        self.signatures[-1].setSpacing(10)
+        self.signatures[-1].setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        self.signatures[-1].setLabel(tt)
+        self._paint_all_cursors()
+        self.x_axes[-1].attach(self.plot)
+        self.y_axes[-1].attach(self.plot)
+        self.signatures[-1].attach(self.plot)
+
+    def _paint_all_cursors(self):
+        for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
+            if x_axis == self.x_axes[-1]:
+                pen = QPen(self.current_color, 2, QtCore.Qt.DotLine)
+                sign.label().setColor(self.current_color)
+            else:
+                pen = QPen(self.last_color, 2, QtCore.Qt.DotLine)
+                sign.label().setColor(self.last_color)
+            x_axis.setPen(pen)
+            y_axis.setPen(pen)
+
+    def del_cursor(self, x, y):
+        _v, _c = self.plot.get_minor_axis_step()
+        for x_axis, y_axis, sign, point in zip(self.x_axes, self.y_axes, self.signatures, self.points):
+            if np.abs(point[0] - x) < 0.2 * _v and np.abs(point[1] - y) < 0.2 * _c:
+                x_axis.detach()
+                y_axis.detach()
+                sign.detach()
+
+    def detach(self):
+        for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
+            x_axis.detach()
+            y_axis.detach()
+            sign.detach()
 
     def attach(self, plot):
-        self.x_axis.attach(plot)
-        self.y_axis.attach(plot)
-        self.sign.attach(plot)
-
-    def __del__(self):
-        self.x_axis.detach()
-        self.y_axis.detach()
-        self.sign.detach()
+        for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
+            x_axis.attach(plot)
+            y_axis.attach(plot)
+            sign.attach(plot)
 
 
 class IvcViewer(QwtPlot):
     min_border_voltage = 1.0
     min_border_current = 0.5
     curves = []
-    cursors = []
 
     min_borders_changed = QtCore.pyqtSignal()
 
@@ -161,7 +189,7 @@ class IvcViewer(QwtPlot):
             self.__min_border_current)
         self._current_scale = 0.4
         self._voltage_scale = 1.5
-
+        self.cursors = IvcCursors(self)
         self._lower_text_marker = None
         self._center_text_marker = None
         self._center_text = None
@@ -180,14 +208,12 @@ class IvcViewer(QwtPlot):
         y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
         if self._add_cursor_mode:
             if event.button() == Qt.LeftButton:
-                self.cursors.append(IvcCursor(self, x, y))
+                self.cursors.add_cursor(x, y)
                 self._add_cursor_mode = False
                 event.accept()
         elif self._remove_cursor_mode:
             if event.button() == Qt.LeftButton:
-                for cursor in self.cursors:
-                    if np.abs(cursor.point[0] - x) < 0.1 and np.abs(cursor.point[1] - y) < 0.1:
-                        self.cursors.remove(cursor)
+                self.cursors.del_cursor(x, y)
                 self._remove_cursor_mode = False
                 event.accept()
 
@@ -199,6 +225,7 @@ class IvcViewer(QwtPlot):
         self.y_axis.detach()
         self.x_axis.detach()
         self.__grid.detach()
+        self.cursors.detach()
         for curve in self.curves:
             curve.detach()
         tt = QwtText(text)
@@ -237,6 +264,7 @@ class IvcViewer(QwtPlot):
         if self._center_text_marker:
             self._center_text_marker.detach()
             self._center_text = None
+            self.cursors.attach(self)
             self.y_axis.attach(self)
             self.x_axis.attach(self)
             self.__grid.attach(self)
