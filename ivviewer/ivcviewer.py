@@ -10,11 +10,19 @@ from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
 
 from typing import List
 
+m = 10000
+
 
 @dataclass
 class Curve:
     voltages: List[float]
     currents: List[float]
+
+
+@dataclass
+class Point:
+    x: float
+    y: float
 
 
 __all__ = ["IvcViewer"]
@@ -58,21 +66,19 @@ class IvcCursors:
     def __init__(self, plot):
         self.plot = plot
 
-    def add_cursor(self, x, y):
-        m = 10000
-
-        self.points.append((x, y))
+    def add_cursor(self, pos: Point):
+        self.points.append(pos)
         self.x_axes.append(QwtPlotCurve())
         self.y_axes.append(QwtPlotCurve())
         self.signatures.append(QwtPlotMarker())
-        tt = QwtText("x = {}, y = {}".format(x, y))
+        tt = QwtText("x = {}, y = {}".format(pos.x, pos.y))
         font = QFont()
         font.setPointSize(8)
         tt.setFont(font)
         tt.setRenderFlags(QtCore.Qt.AlignLeft)
-        self.x_axes[-1].setData((x, x), (-m, m))
-        self.y_axes[-1].setData((-m, m), (y, y))
-        self.signatures[-1].setValue(x, y)
+        self.x_axes[-1].setData((pos.x, pos.x), (-m, m))
+        self.y_axes[-1].setData((-m, m), (pos.y, pos.y))
+        self.signatures[-1].setValue(pos.x, pos.y)
         self.signatures[-1].setSpacing(10)
         self.signatures[-1].setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         self.signatures[-1].setLabel(tt)
@@ -92,13 +98,27 @@ class IvcCursors:
             x_axis.setPen(pen)
             y_axis.setPen(pen)
 
-    def del_cursor(self, x, y):
+    def del_cursor(self, pos: Point):
         _v, _c = self.plot.get_minor_axis_step()
         for x_axis, y_axis, sign, point in zip(self.x_axes, self.y_axes, self.signatures, self.points):
-            if np.abs(point[0] - x) < 0.2 * _v and np.abs(point[1] - y) < 0.2 * _c:
+            if np.abs(point.x - pos.x) < 0.2 * _v and np.abs(point.y - pos.y) < 0.2 * _c:
                 x_axis.detach()
                 y_axis.detach()
                 sign.detach()
+
+    def move_cursor(self, start_pos: Point, end_pos: Point):
+        _v, _c = self.plot.get_minor_axis_step()
+        for x_axis, y_axis, sign, point in zip(self.x_axes, self.y_axes, self.signatures, self.points):
+            if np.abs(point.x - start_pos.x) < 0.2 * _v and np.abs(point.y - start_pos.y) < 0.2 * _c:
+                x_axis.setData((end_pos.x, end_pos.x), (-m, m))
+                y_axis.setData((-m, m), (end_pos.y, end_pos.y))
+                sign.setValue(end_pos.x, end_pos.y)
+                sign.label().setText("x = {}, y = {}".format(end_pos.x, end_pos.y))
+
+    def check_points(self):
+        for sign, point in zip(self.signatures, self.points):
+            point.x = sign.value().x()
+            point.y = sign.value().y()
 
     def detach(self):
         for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
@@ -142,8 +162,6 @@ class IvcViewer(QwtPlot):
         self.__grid.attach(self)
         self.text_color = text_color
         self.grid_color = grid_color
-        # WTF?! TODO: Refactor m away!
-        m = 10000  # Is said to be enough for anybody
 
         axis_font = QFont()
         axis_font.pointSize = 20
@@ -190,6 +208,7 @@ class IvcViewer(QwtPlot):
         self._current_scale = 0.4
         self._voltage_scale = 1.5
         self.cursors = IvcCursors(self)
+        self._start_pos = None
         self._lower_text_marker = None
         self._center_text_marker = None
         self._center_text = None
@@ -206,16 +225,23 @@ class IvcViewer(QwtPlot):
     def mousePressEvent(self, event):
         x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
         y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
-        if self._add_cursor_mode:
-            if event.button() == Qt.LeftButton:
-                self.cursors.add_cursor(x, y)
+        self._start_pos = Point(x, y)
+        if event.button() == Qt.LeftButton:
+            if self._add_cursor_mode:
+                self.cursors.add_cursor(self._start_pos)
                 self._add_cursor_mode = False
                 event.accept()
-        elif self._remove_cursor_mode:
-            if event.button() == Qt.LeftButton:
-                self.cursors.del_cursor(x, y)
+            elif self._remove_cursor_mode:
+                self.cursors.del_cursor(self._start_pos)
                 self._remove_cursor_mode = False
                 event.accept()
+            self.cursors.check_points()
+
+    def mouseMoveEvent(self, event):
+        x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
+        y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
+        _end_pos = Point(x, y)
+        self.cursors.move_cursor(self._start_pos, _end_pos)
 
     def set_center_text(self, text: str):
         if self._center_text == text:
