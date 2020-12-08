@@ -55,117 +55,112 @@ class PlotCurve(QwtPlotCurve):
         _plot_curve(self)
 
 
+class IvcCursor:
+
+    def __init__(self, pos: Point):
+        self._x_axis = QwtPlotCurve()
+        self._y_axis = QwtPlotCurve()
+        self._sign = QwtPlotMarker()
+        self._cross = QwtPlotMarker()
+        self.x = pos.x
+        self.y = pos.y
+        self._x_axis.setData((pos.x, pos.x), (-m, m))
+        self._y_axis.setData((-m, m), (pos.y, pos.y))
+        tt = QwtText("x = {}, y = {}".format(pos.x, pos.y))
+        tt.setFont(QFont())
+        tt.font().setPointSize(8)
+        tt.setRenderFlags(QtCore.Qt.AlignLeft)
+        self._sign.setValue(pos.x, pos.y)
+        self._sign.setSpacing(10)
+        self._sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        self._sign.setLabel(tt)
+        cross_text = QwtText("+")
+        cross_text.setFont(QFont())
+        cross_text.font().setPointSize(14)
+        self._cross.setValue(pos.x, pos.y)
+        self._cross.setLabel(cross_text)
+        self._cross.label().setColor(QColor(255, 255, 255))
+
+    def attach(self, plot):
+        self._x_axis.attach(plot)
+        self._y_axis.attach(plot)
+        self._sign.attach(plot)
+        self._cross.attach(plot)
+
+    def detach(self):
+        self._x_axis.detach()
+        self._y_axis.detach()
+        self._sign.detach()
+        self._cross.detach()
+
+    def paint(self, color: QColor):
+        pen = QPen(color, 2, QtCore.Qt.DotLine)
+        self._sign.label().setColor(color)
+        self._x_axis.setPen(pen)
+        self._y_axis.setPen(pen)
+
+    def move(self, pos: Point):
+        self.x, self.y = pos.x, pos.y
+        self._x_axis.setData((pos.x, pos.x), (-m, m))
+        self._y_axis.setData((-m, m), (pos.y, pos.y))
+        self._cross.setValue(pos.x, pos.y)
+        self._sign.setValue(pos.x, pos.y)
+        self._sign.label().setText("x = {}, y = {}".format(pos.x, pos.y))
+
+    def check_point(self):
+        self.x = self._sign.value().x()
+        self.y = self._sign.value().y()
+
+
 class IvcCursors:
-    x_axes = []
-    y_axes = []
-    signatures = []
-    points = []
-    crosses = []
+    cursors = []
     current_color = QColor(255, 0, 0)
     last_color = QColor(255, 0, 255)
 
     def __init__(self, plot):
         self.plot = plot
+        self.current_index = None
 
     def add_cursor(self, pos: Point):
-        self.points.append(pos)
-        self.x_axes.append(QwtPlotCurve())
-        self.y_axes.append(QwtPlotCurve())
-        self.signatures.append(QwtPlotMarker())
-        self.crosses.append(QwtPlotMarker())
-        cross = QwtText("+")
-        f = QFont()
-        f.setPointSize(14)
-        cross.setFont(f)
-        cross.setRenderFlags(QtCore.Qt.AlignCenter)
-        tt = QwtText("x = {}, y = {}".format(pos.x, pos.y))
-        font = QFont()
-        font.setPointSize(8)
-        tt.setFont(font)
-        tt.setRenderFlags(QtCore.Qt.AlignLeft)
-        self.x_axes[-1].setData((pos.x, pos.x), (-m, m))
-        self.y_axes[-1].setData((-m, m), (pos.y, pos.y))
-        self.signatures[-1].setValue(pos.x, pos.y)
-        self.signatures[-1].setSpacing(10)
-        self.signatures[-1].setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
-        self.signatures[-1].setLabel(tt)
-        self.crosses[-1].setValue(pos.x, pos.y)
-        self.crosses[-1].setLabelAlignment(Qt.AlignCenter)
-        self.crosses[-1].setLabel(cross)
-        self.crosses[-1].label().setColor(QColor(255, 255, 255))
-        self._paint_all_cursors()
-        self.x_axes[-1].attach(self.plot)
-        self.y_axes[-1].attach(self.plot)
-        self.signatures[-1].attach(self.plot)
-        self.crosses[-1].attach(self.plot)
+        for c in self.cursors:
+            c.paint(self.last_color)
+        self.cursors.append(IvcCursor(pos))
+        self.cursors[-1].paint(self.current_color)
+        self.cursors[-1].attach(self.plot)
+        self.current_index = len(self.cursors) - 1
 
-    def _paint_all_cursors(self):
-        for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
-            if x_axis == self.x_axes[-1]:
-                pen = QPen(self.current_color, 2, QtCore.Qt.DotLine)
-                sign.label().setColor(self.current_color)
-            else:
-                pen = QPen(self.last_color, 2, QtCore.Qt.DotLine)
-                sign.label().setColor(self.last_color)
-            x_axis.setPen(pen)
-            y_axis.setPen(pen)
-
-    def paint_current_cursor(self, pos: Point):
+    def set_current_mark(self, pos: Point):
         _v, _c = self.plot.get_minor_axis_step()
-        for x_axis, y_axis, sign, point in zip(self.x_axes, self.y_axes, self.signatures, self.points):
-            if np.abs(point.x - pos.x) < 0.2 * _v and np.abs(point.y - pos.y) < 0.2 * _c:
-                pen = QPen(self.current_color, 2, QtCore.Qt.DotLine)
-                sign.label().setColor(self.current_color)
-            else:
-                pen = QPen(self.last_color, 2, QtCore.Qt.DotLine)
-                sign.label().setColor(self.last_color)
-            x_axis.setPen(pen)
-            y_axis.setPen(pen)
+        for cursor in self.cursors:
+            if np.abs(cursor.x - pos.x) < 0.2 * _v and np.abs(cursor.y - pos.y) < 0.2 * _c:
+                self.current_index = self.cursors.index(cursor)
+        self.paint_current_cursor()
 
-    def del_cursor(self, pos: Point):
-        _v, _c = self.plot.get_minor_axis_step()
-        for x_axis, y_axis, sign, point, cross in zip(self.x_axes, self.y_axes,
-                                                      self.signatures, self.points, self.crosses):
-            if np.abs(point.x - pos.x) < 0.2 * _v and np.abs(point.y - pos.y) < 0.2 * _c:
-                x_axis.detach()
-                y_axis.detach()
-                sign.detach()
-                cross.detach()
+    def paint_current_cursor(self):
+        for c in self.cursors:
+            c.paint(self.last_color)
+        if self.current_index is not None:
+            self.cursors[self.current_index].paint(self.current_color)
 
-    def move_cursor(self, start_pos: Point, end_pos: Point):
-        _v, _c = self.plot.get_minor_axis_step()
-        for x_axis, y_axis, cross, sign, point in zip(self.x_axes, self.y_axes, self.crosses,
-                                                      self.signatures, self.points):
-            if np.abs(point.x - start_pos.x) < 0.2 * _v and np.abs(point.y - start_pos.y) < 0.2 * _c:
-                x_axis.setData((end_pos.x, end_pos.x), (-m, m))
-                y_axis.setData((-m, m), (end_pos.y, end_pos.y))
-                cross.setValue(end_pos.x, end_pos.y)
-                sign.setValue(end_pos.x, end_pos.y)
-                sign.label().setText("x = {}, y = {}".format(end_pos.x, end_pos.y))
-                pen = QPen(self.current_color, 2, QtCore.Qt.DotLine)
-                sign.label().setColor(self.current_color)
-            else:
-                pen = QPen(self.last_color, 2, QtCore.Qt.DotLine)
-                sign.label().setColor(self.last_color)
-            x_axis.setPen(pen)
-            y_axis.setPen(pen)
+    def del_cursor(self):
+        if self.current_index is not None:
+            self.cursors[self.current_index].detach()
+
+    def move_cursor(self, end_pos: Point):
+        if self.current_index is not None:
+            self.cursors[self.current_index].move(end_pos)
 
     def check_points(self):
-        for sign, point in zip(self.signatures, self.points):
-            point.x = sign.value().x()
-            point.y = sign.value().y()
+        for cursor in self.cursors:
+            cursor.check_point()
 
     def detach(self):
-        for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
-            x_axis.detach()
-            y_axis.detach()
-            sign.detach()
+        for c in self.cursors:
+            c.detach()
 
     def attach(self, plot):
-        for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
-            x_axis.attach(plot)
-            y_axis.attach(plot)
-            sign.attach(plot)
+        for c in self.cursors:
+            c.attach(plot)
 
 
 class IvcViewer(QwtPlot):
@@ -251,11 +246,11 @@ class IvcViewer(QwtPlot):
         self._add_cursor_mode = False
         self._remove_cursor_mode = False
 
-    def activate_adding_cursor(self):
-        self._add_cursor_mode = True
+    def set_state_adding_cursor(self, state):
+        self._add_cursor_mode = state
 
-    def activate_removing_cursor(self):
-        self._remove_cursor_mode = True
+    def set_state_removing_cursor(self, state):
+        self._remove_cursor_mode = state
 
     def get_state_adding_cursor(self):
         return self._add_cursor_mode
@@ -267,24 +262,21 @@ class IvcViewer(QwtPlot):
         x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
         y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
         self._start_pos = Point(x, y)
+        self.cursors.set_current_mark(self._start_pos)
         if event.button() == Qt.LeftButton:
             if self._add_cursor_mode:
                 self.cursors.add_cursor(self._start_pos)
-                self._add_cursor_mode = False
                 event.accept()
             elif self._remove_cursor_mode:
-                self.cursors.del_cursor(self._start_pos)
-                self._remove_cursor_mode = False
+                self.cursors.del_cursor()
                 event.accept()
-            else:
-                self.cursors.paint_current_cursor(self._start_pos)
             self.cursors.check_points()
 
     def mouseMoveEvent(self, event):
         x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
         y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
         _end_pos = Point(x, y)
-        self.cursors.move_cursor(self._start_pos, _end_pos)
+        self.cursors.move_cursor(_end_pos)
 
     def set_center_text(self, text: str):
         if self._center_text == text:
