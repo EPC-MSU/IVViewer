@@ -257,6 +257,12 @@ class IvcViewer(QwtPlot):
     def activate_removing_cursor(self):
         self._remove_cursor_mode = True
 
+    def get_state_adding_cursor(self):
+        return self._add_cursor_mode
+
+    def get_state_removing_cursor(self):
+        return self._remove_cursor_mode
+
     def mousePressEvent(self, event):
         x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
         y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
