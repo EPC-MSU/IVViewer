@@ -60,6 +60,7 @@ class IvcCursors:
     y_axes = []
     signatures = []
     points = []
+    crosses = []
     current_color = QColor(255, 0, 0)
     last_color = QColor(255, 0, 255)
 
@@ -71,6 +72,12 @@ class IvcCursors:
         self.x_axes.append(QwtPlotCurve())
         self.y_axes.append(QwtPlotCurve())
         self.signatures.append(QwtPlotMarker())
+        self.crosses.append(QwtPlotMarker())
+        cross = QwtText("+")
+        f = QFont()
+        f.setPointSize(14)
+        cross.setFont(f)
+        cross.setRenderFlags(QtCore.Qt.AlignCenter)
         tt = QwtText("x = {}, y = {}".format(pos.x, pos.y))
         font = QFont()
         font.setPointSize(8)
@@ -82,10 +89,15 @@ class IvcCursors:
         self.signatures[-1].setSpacing(10)
         self.signatures[-1].setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         self.signatures[-1].setLabel(tt)
+        self.crosses[-1].setValue(pos.x, pos.y)
+        self.crosses[-1].setLabelAlignment(Qt.AlignCenter)
+        self.crosses[-1].setLabel(cross)
+        self.crosses[-1].label().setColor(QColor(255, 255, 255))
         self._paint_all_cursors()
         self.x_axes[-1].attach(self.plot)
         self.y_axes[-1].attach(self.plot)
         self.signatures[-1].attach(self.plot)
+        self.crosses[-1].attach(self.plot)
 
     def _paint_all_cursors(self):
         for x_axis, y_axis, sign in zip(self.x_axes, self.y_axes, self.signatures):
@@ -98,22 +110,44 @@ class IvcCursors:
             x_axis.setPen(pen)
             y_axis.setPen(pen)
 
-    def del_cursor(self, pos: Point):
+    def paint_current_cursor(self, pos: Point):
         _v, _c = self.plot.get_minor_axis_step()
         for x_axis, y_axis, sign, point in zip(self.x_axes, self.y_axes, self.signatures, self.points):
+            if np.abs(point.x - pos.x) < 0.2 * _v and np.abs(point.y - pos.y) < 0.2 * _c:
+                pen = QPen(self.current_color, 2, QtCore.Qt.DotLine)
+                sign.label().setColor(self.current_color)
+            else:
+                pen = QPen(self.last_color, 2, QtCore.Qt.DotLine)
+                sign.label().setColor(self.last_color)
+            x_axis.setPen(pen)
+            y_axis.setPen(pen)
+
+    def del_cursor(self, pos: Point):
+        _v, _c = self.plot.get_minor_axis_step()
+        for x_axis, y_axis, sign, point, cross in zip(self.x_axes, self.y_axes, self.signatures, self.points, self.crosses):
             if np.abs(point.x - pos.x) < 0.2 * _v and np.abs(point.y - pos.y) < 0.2 * _c:
                 x_axis.detach()
                 y_axis.detach()
                 sign.detach()
+                cross.detach()
 
     def move_cursor(self, start_pos: Point, end_pos: Point):
         _v, _c = self.plot.get_minor_axis_step()
-        for x_axis, y_axis, sign, point in zip(self.x_axes, self.y_axes, self.signatures, self.points):
+        for x_axis, y_axis, cross, sign, point in zip(self.x_axes, self.y_axes, self.crosses,
+                                                      self.signatures, self.points):
             if np.abs(point.x - start_pos.x) < 0.2 * _v and np.abs(point.y - start_pos.y) < 0.2 * _c:
                 x_axis.setData((end_pos.x, end_pos.x), (-m, m))
                 y_axis.setData((-m, m), (end_pos.y, end_pos.y))
+                cross.setValue(end_pos.x, end_pos.y)
                 sign.setValue(end_pos.x, end_pos.y)
                 sign.label().setText("x = {}, y = {}".format(end_pos.x, end_pos.y))
+                pen = QPen(self.current_color, 2, QtCore.Qt.DotLine)
+                sign.label().setColor(self.current_color)
+            else:
+                pen = QPen(self.last_color, 2, QtCore.Qt.DotLine)
+                sign.label().setColor(self.last_color)
+            x_axis.setPen(pen)
+            y_axis.setPen(pen)
 
     def check_points(self):
         for sign, point in zip(self.signatures, self.points):
@@ -235,6 +269,8 @@ class IvcViewer(QwtPlot):
                 self.cursors.del_cursor(self._start_pos)
                 self._remove_cursor_mode = False
                 event.accept()
+            else:
+                self.cursors.paint_current_cursor(self._start_pos)
             self.cursors.check_points()
 
     def mouseMoveEvent(self, event):
