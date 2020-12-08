@@ -56,6 +56,9 @@ class PlotCurve(QwtPlotCurve):
 
 
 class IvcCursor:
+    """
+    This class is marker with x, y - axes, he show coordinates for select point
+    """
 
     def __init__(self, pos: Point):
         self._x_axis = QwtPlotCurve()
@@ -74,7 +77,7 @@ class IvcCursor:
         self._sign.setSpacing(10)
         self._sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         self._sign.setLabel(tt)
-        cross_text = QwtText("+")
+        cross_text = QwtText("+")  # make cross in center of cursor
         cross_text.setFont(QFont())
         cross_text.font().setPointSize(14)
         self._cross.setValue(pos.x, pos.y)
@@ -113,9 +116,13 @@ class IvcCursor:
 
 
 class IvcCursors:
+    """
+    This class is array of objects of class IvcCursor
+    """
     cursors = []
-    current_color = QColor(255, 0, 0)
-    last_color = QColor(255, 0, 255)
+    current_color = QColor(255, 0, 0)  # color of select cursor
+    last_color = QColor(255, 0, 255)  # color for rest cursors
+    k_radius = 0.2  # coefficient of radius of action for select cursor
 
     def __init__(self, plot):
         self.plot = plot
@@ -132,7 +139,7 @@ class IvcCursors:
     def set_current_mark(self, pos: Point):
         _v, _c = self.plot.get_minor_axis_step()
         for cursor in self.cursors:
-            if np.abs(cursor.x - pos.x) < 0.2 * _v and np.abs(cursor.y - pos.y) < 0.2 * _c:
+            if np.abs(cursor.x - pos.x) < self.k_radius * _v and np.abs(cursor.y - pos.y) < self.k_radius * _c:
                 self.current_index = self.cursors.index(cursor)
         self.paint_current_cursor()
 
