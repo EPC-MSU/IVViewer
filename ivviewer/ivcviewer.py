@@ -124,7 +124,8 @@ class IvcCursors:
 
     def del_cursor(self, pos: Point):
         _v, _c = self.plot.get_minor_axis_step()
-        for x_axis, y_axis, sign, point, cross in zip(self.x_axes, self.y_axes, self.signatures, self.points, self.crosses):
+        for x_axis, y_axis, sign, point, cross in zip(self.x_axes, self.y_axes,
+                                                      self.signatures, self.points, self.crosses):
             if np.abs(point.x - pos.x) < 0.2 * _v and np.abs(point.y - pos.y) < 0.2 * _c:
                 x_axis.detach()
                 y_axis.detach()
