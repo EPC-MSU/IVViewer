@@ -60,6 +60,9 @@ class IvcCursor:
     This class is marker with x, y - axes, he show coordinates for select point
     """
 
+    CROSS_X = 0.1
+    CROSS_Y = 0.5
+
     def __init__(self, pos: Point):
         self._x_axis = QwtPlotCurve()
         self._y_axis = QwtPlotCurve()
@@ -77,38 +80,53 @@ class IvcCursor:
         self._sign.setSpacing(10)
         self._sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         self._sign.setLabel(tt)
+        """
         cross_text = QwtText("+")  # make cross in center of cursor
         cross_text.setFont(QFont())
         cross_text.font().setPointSize(14)
         self._cross.setValue(pos.x, pos.y)
         self._cross.setLabel(cross_text)
         self._cross.label().setColor(QColor(255, 255, 255))
+        """
+        self._cross_x = QwtPlotCurve()
+        self._cross_y = QwtPlotCurve()
+        self._cross_x.setData((pos.x - self.CROSS_X, pos.x + self.CROSS_X), (pos.y, pos.y))
+        self._cross_y.setData((pos.x, pos.x), (pos.y - self.CROSS_Y, pos.y + self.CROSS_Y))
 
     def attach(self, plot):
         self._x_axis.attach(plot)
         self._y_axis.attach(plot)
         self._sign.attach(plot)
-        self._cross.attach(plot)
+        # self._cross.attach(plot)
+        self._cross_x.attach(plot)
+        self._cross_y.attach(plot)
 
     def detach(self):
         self._x_axis.detach()
         self._y_axis.detach()
         self._sign.detach()
-        self._cross.detach()
+        # self._cross.detach()
+        self._cross_x.detach()
+        self._cross_y.detach()
 
     def paint(self, color: QColor):
         pen = QPen(color, 2, QtCore.Qt.DotLine)
         self._sign.label().setColor(color)
         self._x_axis.setPen(pen)
         self._y_axis.setPen(pen)
+        pen = QPen(QColor(255, 255, 255), 2, QtCore.Qt.SolidLine)
+        self._cross_x.setPen(pen)
+        self._cross_y.setPen(pen)
 
     def move(self, pos: Point):
         self.x, self.y = pos.x, pos.y
         self._x_axis.setData((pos.x, pos.x), (-m, m))
         self._y_axis.setData((-m, m), (pos.y, pos.y))
-        self._cross.setValue(pos.x, pos.y)
+        # self._cross.setValue(pos.x, pos.y)
         self._sign.setValue(pos.x, pos.y)
         self._sign.label().setText("x = {}, y = {}".format(pos.x, pos.y))
+        self._cross_x.setData((pos.x - self.CROSS_X, pos.x + self.CROSS_X), (pos.y, pos.y))
+        self._cross_y.setData((pos.x, pos.x), (pos.y - self.CROSS_Y, pos.y + self.CROSS_Y))
 
     def check_point(self):
         self.x = self._sign.value().x()
