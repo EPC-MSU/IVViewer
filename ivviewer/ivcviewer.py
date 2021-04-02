@@ -60,10 +60,10 @@ class IvcCursor:
     This class is marker with x, y - axes, he show coordinates for select point
     """
 
-    CROSS_X = 0.1
-    CROSS_Y = 0.5
+    CROSS_SIZE = 10
 
-    def __init__(self, pos: Point):
+    def __init__(self, pos: Point, plot):
+        self.plot = plot
         self._x_axis = QwtPlotCurve()
         self._y_axis = QwtPlotCurve()
         self._sign = QwtPlotMarker()
@@ -90,8 +90,6 @@ class IvcCursor:
         """
         self._cross_x = QwtPlotCurve()
         self._cross_y = QwtPlotCurve()
-        self._cross_x.setData((pos.x - self.CROSS_X, pos.x + self.CROSS_X), (pos.y, pos.y))
-        self._cross_y.setData((pos.x, pos.x), (pos.y - self.CROSS_Y, pos.y + self.CROSS_Y))
 
     def attach(self, plot):
         self._x_axis.attach(plot)
@@ -109,12 +107,25 @@ class IvcCursor:
         self._cross_x.detach()
         self._cross_y.detach()
 
+    def _set_cross_xy(self):
+
+        x = self.plot.canvasMap(QwtPlot.xBottom).transform(self.x)
+        x_1 = self.plot.canvasMap(QwtPlot.xBottom).invTransform(x - self.CROSS_SIZE)
+        x_2 = self.plot.canvasMap(QwtPlot.xBottom).invTransform(x + self.CROSS_SIZE)
+        y = self.plot.canvasMap(QwtPlot.yLeft).transform(self.y)
+        y_1 = self.plot.canvasMap(QwtPlot.yLeft).invTransform(y - self.CROSS_SIZE)
+        y_2 = self.plot.canvasMap(QwtPlot.yLeft).invTransform(y + self.CROSS_SIZE)
+        self._cross_x.setData((x_1, x_2), (self.y, self.y))
+        self._cross_y.setData((self.x, self.x), (y_1, y_2))
+
     def paint(self, color: QColor):
         pen = QPen(color, 2, QtCore.Qt.DotLine)
         self._sign.label().setColor(color)
         self._x_axis.setPen(pen)
         self._y_axis.setPen(pen)
         pen = QPen(QColor(255, 255, 255), 2, QtCore.Qt.SolidLine)
+
+        self._set_cross_xy()
         self._cross_x.setPen(pen)
         self._cross_y.setPen(pen)
 
@@ -125,8 +136,7 @@ class IvcCursor:
         # self._cross.setValue(pos.x, pos.y)
         self._sign.setValue(pos.x, pos.y)
         self._sign.label().setText("x = {}, y = {}".format(pos.x, pos.y))
-        self._cross_x.setData((pos.x - self.CROSS_X, pos.x + self.CROSS_X), (pos.y, pos.y))
-        self._cross_y.setData((pos.x, pos.x), (pos.y - self.CROSS_Y, pos.y + self.CROSS_Y))
+        self._set_cross_xy()
 
     def check_point(self):
         self.x = self._sign.value().x()
@@ -149,7 +159,7 @@ class IvcCursors:
     def add_cursor(self, pos: Point):
         for c in self.cursors:
             c.paint(self.last_color)
-        self.cursors.append(IvcCursor(pos))
+        self.cursors.append(IvcCursor(pos, self.plot))
         self.cursors[-1].paint(self.current_color)
         self.cursors[-1].attach(self.plot)
         self.current_index = len(self.cursors) - 1
@@ -200,7 +210,6 @@ class IvcViewer(QwtPlot):
                  grid_color=QColor(0, 0, 0), back_color=QColor(0xe1, 0xed, 0xeb),
                  text_color=QColor(255, 0, 0), axis_sign_enabled=True):
         super().__init__(parent)
-
         self.__owner = owner
         self.__grid = QwtPlotGrid()
         self.__grid.enableXMin(True)
@@ -409,6 +418,14 @@ class IvcViewer(QwtPlot):
         self._voltage_scale = voltage
         self._current_scale = current
         self.__adjust_scale()
+
+    def replot_cursors(self):
+        """
+        Method replot cursors.
+        """
+
+        self.cursors.paint_current_cursor()
+        self.cursors.attach(self)
 
 
 def _plot_curve(curve_plot: PlotCurve) -> None:
