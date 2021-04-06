@@ -1,15 +1,12 @@
-from typing import Optional, Tuple
-
-import numpy as np
+from typing import List, Optional, Tuple
 from dataclasses import dataclass
-
+import numpy as np
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPen, QBrush, QColor, QFont, QCursor
-from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtText, QwtPlotMarker
+from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QPen
+from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
 
-from typing import List
-
+__all__ = ["IvcViewer"]
 m = 10000
 
 
@@ -23,9 +20,6 @@ class Curve:
 class Point:
     x: float
     y: float
-
-
-__all__ = ["IvcViewer"]
 
 
 class PlotCurve(QwtPlotCurve):
@@ -57,10 +51,11 @@ class PlotCurve(QwtPlotCurve):
 
 class IvcCursor:
     """
-    This class is marker with x, y - axes, he show coordinates for select point
+    This class is marker with x, y - axes, it shows coordinates for select
+    point.
     """
 
-    CROSS_SIZE = 10
+    CROSS_SIZE = 10  # default size of white cross in px
 
     def __init__(self, pos: Point, plot):
         self.plot = plot
@@ -80,14 +75,6 @@ class IvcCursor:
         self._sign.setSpacing(10)
         self._sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         self._sign.setLabel(tt)
-        """
-        cross_text = QwtText("+")  # make cross in center of cursor
-        cross_text.setFont(QFont())
-        cross_text.font().setPointSize(14)
-        self._cross.setValue(pos.x, pos.y)
-        self._cross.setLabel(cross_text)
-        self._cross.label().setColor(QColor(255, 255, 255))
-        """
         self._cross_x = QwtPlotCurve()
         self._cross_y = QwtPlotCurve()
 
@@ -95,7 +82,6 @@ class IvcCursor:
         self._x_axis.attach(plot)
         self._y_axis.attach(plot)
         self._sign.attach(plot)
-        # self._cross.attach(plot)
         self._cross_x.attach(plot)
         self._cross_y.attach(plot)
 
@@ -103,11 +89,13 @@ class IvcCursor:
         self._x_axis.detach()
         self._y_axis.detach()
         self._sign.detach()
-        # self._cross.detach()
         self._cross_x.detach()
         self._cross_y.detach()
 
     def _set_cross_xy(self):
+        """
+        Method calculates sizes and position of white cross of marker.
+        """
 
         x = self.plot.canvasMap(QwtPlot.xBottom).transform(self.x)
         x_1 = self.plot.canvasMap(QwtPlot.xBottom).invTransform(x - self.CROSS_SIZE)
@@ -119,12 +107,16 @@ class IvcCursor:
         self._cross_y.setData((self.x, self.x), (y_1, y_2))
 
     def paint(self, color: QColor):
+        """
+        Method draw all parts of marker.
+        :param color: color for horizontal and vertical lines.
+        """
+
         pen = QPen(color, 2, QtCore.Qt.DotLine)
         self._sign.label().setColor(color)
         self._x_axis.setPen(pen)
         self._y_axis.setPen(pen)
         pen = QPen(QColor(255, 255, 255), 2, QtCore.Qt.SolidLine)
-
         self._set_cross_xy()
         self._cross_x.setPen(pen)
         self._cross_y.setPen(pen)
@@ -145,8 +137,9 @@ class IvcCursor:
 
 class IvcCursors:
     """
-    This class is array of objects of class IvcCursor
+    This class is array of objects of class IvcCursor.
     """
+
     cursors = []
     current_color = QColor(255, 0, 0)  # color of select cursor
     last_color = QColor(255, 0, 255)  # color for rest cursors
@@ -199,10 +192,10 @@ class IvcCursors:
 
 
 class IvcViewer(QwtPlot):
+
     min_border_voltage = 1.0
     min_border_current = 0.5
     curves = []
-
     min_borders_changed = QtCore.pyqtSignal()
 
     def __init__(self, owner, parent=None,
@@ -419,13 +412,12 @@ class IvcViewer(QwtPlot):
         self._current_scale = current
         self.__adjust_scale()
 
-    def replot_cursors(self):
+    def redraw_cursors(self):
         """
-        Method replot cursors.
+        Method redraw cursors.
         """
 
         self.cursors.paint_current_cursor()
-        self.cursors.attach(self)
 
 
 def _plot_curve(curve_plot: PlotCurve) -> None:
