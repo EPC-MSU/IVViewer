@@ -67,9 +67,9 @@ class IvcCursor:
         self.y = pos.y
         self._x_axis.setData((pos.x, pos.x), (-m, m))
         self._y_axis.setData((-m, m), (pos.y, pos.y))
-        tt = QwtText("x = {}, y = {}".format(pos.x, pos.y))
+        tt = QwtText("U = {}, I = {}".format(pos.x, pos.y))
         tt.setFont(QFont())
-        tt.font().setPointSize(8)
+        tt.font().setPointSize(10)
         tt.setRenderFlags(QtCore.Qt.AlignLeft)
         self._sign.setValue(pos.x, pos.y)
         self._sign.setSpacing(10)
@@ -127,7 +127,7 @@ class IvcCursor:
         self._y_axis.setData((-m, m), (pos.y, pos.y))
         # self._cross.setValue(pos.x, pos.y)
         self._sign.setValue(pos.x, pos.y)
-        self._sign.label().setText("x = {}, y = {}".format(pos.x, pos.y))
+        self._sign.label().setText("U = {}, I = {}".format(pos.x, pos.y))
         self._set_cross_xy()
 
     def check_point(self):
@@ -142,7 +142,7 @@ class IvcCursors:
 
     cursors = []
     current_color = QColor(255, 0, 0)  # color of select cursor
-    last_color = QColor(255, 0, 255)  # color for rest cursors
+    last_color = QColor(102, 255, 0)  # color for rest cursors
     k_radius = 0.2  # coefficient of radius of action for select cursor
 
     def __init__(self, plot):
