@@ -1,9 +1,11 @@
-from typing import List, Optional, Tuple
+import os
 from dataclasses import dataclass
+from functools import partial
+from typing import List, Optional, Tuple
 import numpy as np
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QCoreApplication as qApp, QPoint, Qt
 from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QPen
+from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
 
 __all__ = ["IvcViewer"]
@@ -70,7 +72,7 @@ class IvcCursor:
         tt = QwtText("U = {}, I = {}".format(pos.x, pos.y))
         tt.setFont(QFont())
         tt.font().setPointSize(10)
-        tt.setRenderFlags(QtCore.Qt.AlignLeft)
+        tt.setRenderFlags(Qt.AlignLeft)
         self._sign.setValue(pos.x, pos.y)
         self._sign.setSpacing(10)
         self._sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
@@ -112,11 +114,11 @@ class IvcCursor:
         :param color: color for horizontal and vertical lines.
         """
 
-        pen = QPen(color, 2, QtCore.Qt.DotLine)
+        pen = QPen(color, 2, Qt.DotLine)
         self._sign.label().setColor(color)
         self._x_axis.setPen(pen)
         self._y_axis.setPen(pen)
-        pen = QPen(QColor(255, 255, 255), 2, QtCore.Qt.SolidLine)
+        pen = QPen(QColor(255, 255, 255), 2, Qt.SolidLine)
         self._set_cross_xy()
         self._cross_x.setPen(pen)
         self._cross_y.setPen(pen)
@@ -150,45 +152,68 @@ class IvcCursors:
         self.current_index = None
 
     def add_cursor(self, pos: Point):
-        for c in self.cursors:
-            c.paint(self.last_color)
+        """
+        Method adds cursor at given position.
+        :param pos: position where cursor should be added.
+        """
+
+        for cursor in self.cursors:
+            cursor.paint(self.last_color)
         self.cursors.append(IvcCursor(pos, self.plot))
         self.cursors[-1].paint(self.current_color)
         self.cursors[-1].attach(self.plot)
         self.current_index = len(self.cursors) - 1
 
-    def set_current_mark(self, pos: Point):
-        _v, _c = self.plot.get_minor_axis_step()
+    def attach(self, plot):
         for cursor in self.cursors:
-            if np.abs(cursor.x - pos.x) < self.k_radius * _v and np.abs(cursor.y - pos.y) < self.k_radius * _c:
-                self.current_index = self.cursors.index(cursor)
-        self.paint_current_cursor()
-
-    def paint_current_cursor(self):
-        for c in self.cursors:
-            c.paint(self.last_color)
-        if self.current_index is not None:
-            self.cursors[self.current_index].paint(self.current_color)
-
-    def del_cursor(self):
-        if self.current_index is not None:
-            self.cursors[self.current_index].detach()
-
-    def move_cursor(self, end_pos: Point):
-        if self.current_index is not None:
-            self.cursors[self.current_index].move(end_pos)
+            cursor.attach(plot)
 
     def check_points(self):
         for cursor in self.cursors:
             cursor.check_point()
 
-    def detach(self):
-        for c in self.cursors:
-            c.detach()
+    def del_cursor(self):
+        """
+        Method deletes current cursor.
+        """
 
-    def attach(self, plot):
-        for c in self.cursors:
-            c.attach(plot)
+        if self.current_index is not None:
+            self.cursors[self.current_index].detach()
+
+    def detach(self):
+        for cursor in self.cursors:
+            cursor.detach()
+
+    def is_empty(self) -> bool:
+        """
+        Method checks if there are cursors.
+        :return: True if object has no cursors otherwise True.
+        """
+
+        return not bool(self.cursors)
+
+    def move_cursor(self, end_pos: Point):
+        if self.current_index is not None:
+            self.cursors[self.current_index].move(end_pos)
+
+    def paint_current_cursor(self):
+        for cursor in self.cursors:
+            cursor.paint(self.last_color)
+        if self.current_index is not None:
+            self.cursors[self.current_index].paint(self.current_color)
+
+    def set_current_mark(self, pos: Point):
+        """
+        Method finds cursor at given point.
+        :param pos: position where cursor is located.
+        """
+
+        width, height = self.plot.get_minor_axis_step()
+        for cursor in self.cursors:
+            if (np.abs(cursor.x - pos.x) < self.k_radius * width and
+                    np.abs(cursor.y - pos.y) < self.k_radius * height):
+                self.current_index = self.cursors.index(cursor)
+        self.paint_current_cursor()
 
 
 class IvcViewer(QwtPlot):
@@ -196,25 +221,21 @@ class IvcViewer(QwtPlot):
     min_border_voltage = 1.0
     min_border_current = 0.5
     curves = []
-    min_borders_changed = QtCore.pyqtSignal()
+    min_borders_changed = pyqtSignal()
 
-    def __init__(self, owner, parent=None,
-                 solid_axis_enabled=True,
-                 grid_color=QColor(0, 0, 0), back_color=QColor(0xe1, 0xed, 0xeb),
-                 text_color=QColor(255, 0, 0), axis_sign_enabled=True):
+    def __init__(self, owner, parent=None, solid_axis_enabled=True, grid_color=QColor(0, 0, 0),
+                 back_color=QColor(0xe1, 0xed, 0xeb), text_color=QColor(255, 0, 0),
+                 axis_sign_enabled=True):
         super().__init__(parent)
         self.__owner = owner
         self.__grid = QwtPlotGrid()
         self.__grid.enableXMin(True)
         self.__grid.enableYMin(True)
         if solid_axis_enabled:
-            self.__grid.setMajorPen(QPen(
-                grid_color, 0, QtCore.Qt.SolidLine))
+            self.__grid.setMajorPen(QPen(grid_color, 0, Qt.SolidLine))
         else:
-            self.__grid.setMajorPen(QPen(
-                QColor(128, 128, 128), 0, QtCore.Qt.DotLine))
-        self.__grid.setMinorPen(QPen(
-            QColor(128, 128, 128), 0, QtCore.Qt.DotLine))
+            self.__grid.setMajorPen(QPen(QColor(128, 128, 128), 0, Qt.DotLine))
+        self.__grid.setMinorPen(QPen(QColor(128, 128, 128), 0, Qt.DotLine))
         # self.__grid.updateScaleDiv(20, 30)
         self.__grid.attach(self)
         self.text_color = text_color
@@ -239,11 +260,11 @@ class IvcViewer(QwtPlot):
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
-        t_x = QwtText(QtCore.QCoreApplication.translate("t", "\nНапряжение (В)"))
+        t_x = QwtText(qApp.translate("t", "\nНапряжение (В)"))
         t_x.setFont(axis_font)
         self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
         self.setAxisTitle(QwtPlot.xBottom, t_x)
-        t_y = QwtText(QtCore.QCoreApplication.translate("t", "Ток (мА)\n"))
+        t_y = QwtText(qApp.translate("t", "Ток (мА)\n"))
         t_y.setFont(axis_font)
         self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
         self.setAxisTitle(QwtPlot.yLeft, t_y)
@@ -254,14 +275,8 @@ class IvcViewer(QwtPlot):
         # Initial setup for axis scales
         self.__min_border_voltage = abs(float(IvcViewer.min_border_voltage))
         self.__min_border_current = abs(float(IvcViewer.min_border_current))
-        self.setAxisScale(
-            QwtPlot.xBottom,
-            -self.__min_border_voltage,
-            self.__min_border_voltage)
-        self.setAxisScale(
-            QwtPlot.yLeft,
-            -self.__min_border_current,
-            self.__min_border_current)
+        self.setAxisScale(QwtPlot.xBottom, -self.__min_border_voltage, self.__min_border_voltage)
+        self.setAxisScale(QwtPlot.yLeft, -self.__min_border_current, self.__min_border_current)
         self._current_scale = 0.4
         self._voltage_scale = 1.5
         self.cursors = IvcCursors(self)
@@ -272,6 +287,85 @@ class IvcViewer(QwtPlot):
         self._lower_text = None
         self._add_cursor_mode = False
         self._remove_cursor_mode = False
+
+        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+        self._image_dir_path: str = "."
+        self._context_menu_works_with_markers: bool = True
+
+    @pyqtSlot(QPoint)
+    def add_cursor(self, position: QPoint):
+        """
+        Slot adds cursor and positions it at a given point.
+        :param position: point where cursor should be placed.
+        """
+
+        x = np.round(self.canvasMap(2).invTransform(position.x()), 2)
+        y = np.round(self.canvasMap(0).invTransform(position.y()), 2)
+        self._start_pos = Point(x, y)
+        self.cursors.set_current_mark(self._start_pos)
+        self.cursors.add_cursor(self._start_pos)
+        self.cursors.check_points()
+
+    def enable_context_menu_for_markers(self, enable: bool):
+        """
+        Method enables or disables context menu to work with markers.
+        :param enable: if True then context menu can work with markers.
+        """
+
+        self._context_menu_works_with_markers = enable
+
+    @pyqtSlot()
+    def remove_all_cursors(self):
+        """
+        Slot deletes all cursors.
+        """
+
+        print("Удалить все курсоры")
+        self.cursors.detach()
+        print(self.cursors.cursors)
+
+    @pyqtSlot()
+    def save_image(self):
+        """
+        Slot saves graph as image.
+        """
+
+        file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
+                                                self._image_dir_path, "Images (*.png)")[0]
+        if file_name:
+            self._image_dir_path = os.path.dirname(file_name)
+            self.grab().save(file_name)
+
+    def set_path_to_default_directory(self, dir_path: str):
+        """
+        Method sets path to directory where images are saved by default.
+        :param dir_path: default directory path.
+        """
+
+        self._image_dir_path = dir_path
+
+    @pyqtSlot(QPoint)
+    def show_context_menu(self, position: QPoint):
+        """
+        Slot shows context menu.
+        :param position: position of the context menu event that the widget
+        receives.
+        """
+
+        menu = QMenu(self)
+        action_save_image = QAction(qApp.translate("t", "Сохранить график как изображение"), menu)
+        action_save_image.triggered.connect(self.save_image)
+        menu.addAction(action_save_image)
+        if self._context_menu_works_with_markers:
+            action_add_cursor = QAction(qApp.translate("t", "Добавить маркер"), menu)
+            action_add_cursor.triggered.connect(partial(self.add_cursor, position))
+            menu.addAction(action_add_cursor)
+            if not self.cursors.is_empty():
+                action_remove_all_cursors = QAction(qApp.translate("t", "Удалить все курсоры"), menu)
+                action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
+                menu.addAction(action_remove_all_cursors)
+        menu.popup(self.mapToGlobal(position))
 
     def set_state_adding_cursor(self, state):
         self._add_cursor_mode = state
@@ -338,7 +432,7 @@ class IvcViewer(QwtPlot):
         font.setPointSize(10)
         tt.setFont(font)
         tt.setColor(self.grid_color)
-        tt.setRenderFlags(QtCore.Qt.AlignLeft)
+        tt.setRenderFlags(Qt.AlignLeft)
         marker = QwtPlotMarker()
         marker.setValue(-self._voltage_scale, -self._current_scale)
         marker.setSpacing(10)
@@ -364,15 +458,16 @@ class IvcViewer(QwtPlot):
             self._lower_text_marker.detach()
             self._lower_text = None
 
-    def get_minor_axis_step(self):
+    def get_minor_axis_step(self) -> Tuple[float, float]:
         """
-        Function return width and height of rectangle of minor axes
-        :return: width, height
+        Method returns width and height of rectangle of minor axes.
+        :return: width and height.
         """
-        xmap = self.__grid.xScaleDiv().ticks(self.__grid.xScaleDiv().MinorTick)
-        ymap = self.__grid.yScaleDiv().ticks(self.__grid.yScaleDiv().MinorTick)
-        x_step = min([round(xmap[i + 1] - xmap[i], 2) for i in range(len(xmap) - 1)])
-        y_step = min([round(ymap[i + 1] - ymap[i], 2) for i in range(len(ymap) - 1)])
+
+        x_map = self.__grid.xScaleDiv().ticks(self.__grid.xScaleDiv().MinorTick)
+        y_map = self.__grid.yScaleDiv().ticks(self.__grid.yScaleDiv().MinorTick)
+        x_step = min([round(x_map[i + 1] - x_map[i], 2) for i in range(len(x_map) - 1)])
+        y_step = min([round(y_map[i + 1] - y_map[i], 2) for i in range(len(y_map) - 1)])
         return x_step, y_step
 
     # min_bounds management
