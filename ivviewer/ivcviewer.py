@@ -4,12 +4,12 @@ from functools import partial
 from typing import List, Optional, Tuple
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QCoreApplication as qApp, QPoint, Qt
-from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QPen
+from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
 
 __all__ = ["IvcViewer"]
-m = 10000
+M = 10000
 
 
 @dataclass
@@ -32,6 +32,14 @@ class PlotCurve(QwtPlotCurve):
         self.parent = parent
         self.owner = owner
 
+    def __set_curve(self, curve: Optional[Curve] = None):
+        self.curve = curve
+        _plot_curve(self)
+
+    def clear_curve(self):
+        self.__set_curve(None)
+        self.owner._IvcViewer__adjust_scale()
+
     def get_curve(self) -> Optional[Curve]:
         return self.curve
 
@@ -39,22 +47,13 @@ class PlotCurve(QwtPlotCurve):
         self.__set_curve(curve)
         self.owner._IvcViewer__adjust_scale()
 
-    def clear_curve(self):
-        self.__set_curve(None)
-        self.owner._IvcViewer__adjust_scale()
-
     def set_curve_params(self, color: QColor = QColor(0, 0, 0, 200)):
         self.setPen(QPen(color, 4))
-
-    def __set_curve(self, curve: Optional[Curve] = None):
-        self.curve = curve
-        _plot_curve(self)
 
 
 class IvcCursor:
     """
-    This class is marker with x, y - axes, it shows coordinates for select
-    point.
+    This class is marker with x, y - axes, it shows coordinates for selected point.
     """
 
     CROSS_SIZE = 10  # default size of white cross in px
@@ -64,35 +63,20 @@ class IvcCursor:
         self._x_axis = QwtPlotCurve()
         self._y_axis = QwtPlotCurve()
         self._sign = QwtPlotMarker()
-        self._cross = QwtPlotMarker()
         self.x = pos.x
         self.y = pos.y
-        self._x_axis.setData((pos.x, pos.x), (-m, m))
-        self._y_axis.setData((-m, m), (pos.y, pos.y))
-        tt = QwtText("U = {}, I = {}".format(pos.x, pos.y))
-        tt.setFont(QFont())
-        tt.font().setPointSize(10)
-        tt.setRenderFlags(Qt.AlignLeft)
+        self._x_axis.setData((pos.x, pos.x), (-M, M))
+        self._y_axis.setData((-M, M), (pos.y, pos.y))
+        cursor_text = QwtText("U = {}, I = {}".format(pos.x, pos.y))
+        cursor_text.setFont(QFont())
+        cursor_text.font().setPointSize(10)
+        cursor_text.setRenderFlags(Qt.AlignLeft)
         self._sign.setValue(pos.x, pos.y)
         self._sign.setSpacing(10)
         self._sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
-        self._sign.setLabel(tt)
+        self._sign.setLabel(cursor_text)
         self._cross_x = QwtPlotCurve()
         self._cross_y = QwtPlotCurve()
-
-    def attach(self, plot):
-        self._x_axis.attach(plot)
-        self._y_axis.attach(plot)
-        self._sign.attach(plot)
-        self._cross_x.attach(plot)
-        self._cross_y.attach(plot)
-
-    def detach(self):
-        self._x_axis.detach()
-        self._y_axis.detach()
-        self._sign.detach()
-        self._cross_x.detach()
-        self._cross_y.detach()
 
     def _set_cross_xy(self):
         """
@@ -108,9 +92,35 @@ class IvcCursor:
         self._cross_x.setData((x_1, x_2), (self.y, self.y))
         self._cross_y.setData((self.x, self.x), (y_1, y_2))
 
+    def attach(self, plot: "IvcViewer"):
+        self._x_axis.attach(plot)
+        self._y_axis.attach(plot)
+        self._sign.attach(plot)
+        self._cross_x.attach(plot)
+        self._cross_y.attach(plot)
+
+    def check_point(self):
+        self.x = self._sign.value().x()
+        self.y = self._sign.value().y()
+
+    def detach(self):
+        self._x_axis.detach()
+        self._y_axis.detach()
+        self._sign.detach()
+        self._cross_x.detach()
+        self._cross_y.detach()
+
+    def move(self, pos: Point):
+        self.x, self.y = pos.x, pos.y
+        self._x_axis.setData((pos.x, pos.x), (-M, M))
+        self._y_axis.setData((-M, M), (pos.y, pos.y))
+        self._sign.setValue(pos.x, pos.y)
+        self._sign.label().setText("U = {}, I = {}".format(pos.x, pos.y))
+        self._set_cross_xy()
+
     def paint(self, color: QColor):
         """
-        Method draw all parts of marker.
+        Method draws all parts of marker.
         :param color: color for horizontal and vertical lines.
         """
 
@@ -123,19 +133,6 @@ class IvcCursor:
         self._cross_x.setPen(pen)
         self._cross_y.setPen(pen)
 
-    def move(self, pos: Point):
-        self.x, self.y = pos.x, pos.y
-        self._x_axis.setData((pos.x, pos.x), (-m, m))
-        self._y_axis.setData((-m, m), (pos.y, pos.y))
-        # self._cross.setValue(pos.x, pos.y)
-        self._sign.setValue(pos.x, pos.y)
-        self._sign.label().setText("U = {}, I = {}".format(pos.x, pos.y))
-        self._set_cross_xy()
-
-    def check_point(self):
-        self.x = self._sign.value().x()
-        self.y = self._sign.value().y()
-
 
 class IvcCursors:
     """
@@ -147,9 +144,23 @@ class IvcCursors:
     last_color = QColor(102, 255, 0)  # color for rest cursors
     k_radius = 0.2  # coefficient of radius of action for select cursor
 
-    def __init__(self, plot):
+    def __init__(self, plot: "IvcViewer"):
         self.plot = plot
         self.current_index = None
+
+    def _find_cursor_at_point(self, pos: Point) -> Optional[int]:
+        """
+        Method finds cursor at given point.
+        :param pos: position where cursor is located.
+        :return: cursor index.
+        """
+
+        width, height = self.plot.get_minor_axis_step()
+        for cursor in self.cursors:
+            if (np.abs(cursor.x - pos.x) < self.k_radius * width and
+                    np.abs(cursor.y - pos.y) < self.k_radius * height):
+                return self.cursors.index(cursor)
+        return None
 
     def add_cursor(self, pos: Point):
         """
@@ -165,6 +176,11 @@ class IvcCursors:
         self.current_index = len(self.cursors) - 1
 
     def attach(self, plot):
+        """
+        Method attaches all cursors to plot.
+        :param plot: plot.
+        """
+
         for cursor in self.cursors:
             cursor.attach(plot)
 
@@ -172,17 +188,35 @@ class IvcCursors:
         for cursor in self.cursors:
             cursor.check_point()
 
-    def del_cursor(self):
+    def detach(self):
         """
-        Method deletes current cursor.
+        Method detaches all cursors from plot.
+        """
+
+        for cursor in self.cursors:
+            cursor.detach()
+
+    def detach_current_cursor(self):
+        """
+        Method detaches current cursor from plot.
         """
 
         if self.current_index is not None:
             self.cursors[self.current_index].detach()
 
-    def detach(self):
-        for cursor in self.cursors:
-            cursor.detach()
+    def find_cursor_for_context_menu(self, pos: Point) -> bool:
+        """
+        Method finds cursor at given point for context menu work.
+        :param pos: position where cursor is located.
+        :return: True if cursor at given position was found otherwise False.
+        """
+
+        cursor_index = self._find_cursor_at_point(pos)
+        if cursor_index is not None:
+            self.current_index = cursor_index
+            self.paint_current_cursor()
+            return True
+        return False
 
     def is_empty(self) -> bool:
         """
@@ -202,25 +236,41 @@ class IvcCursors:
         if self.current_index is not None:
             self.cursors[self.current_index].paint(self.current_color)
 
+    def remove_all_cursors(self):
+        """
+        Method removes all cursors.
+        """
+
+        self.detach()
+        self.cursors.clear()
+        self.current_index = None
+
+    def remove_current_cursor(self):
+        """
+        Method removes current cursor.
+        """
+
+        self.detach_current_cursor()
+        self.cursors.pop(self.current_index)
+        self.current_index = None
+
     def set_current_mark(self, pos: Point):
         """
         Method finds cursor at given point.
         :param pos: position where cursor is located.
         """
 
-        width, height = self.plot.get_minor_axis_step()
-        for cursor in self.cursors:
-            if (np.abs(cursor.x - pos.x) < self.k_radius * width and
-                    np.abs(cursor.y - pos.y) < self.k_radius * height):
-                self.current_index = self.cursors.index(cursor)
+        cursor_index = self._find_cursor_at_point(pos)
+        if cursor_index is not None:
+            self.current_index = cursor_index
         self.paint_current_cursor()
 
 
 class IvcViewer(QwtPlot):
 
-    min_border_voltage = 1.0
-    min_border_current = 0.5
     curves = []
+    min_border_current = 0.5
+    min_border_voltage = 1.0
     min_borders_changed = pyqtSignal()
 
     def __init__(self, owner, parent=None, solid_axis_enabled=True, grid_color=QColor(0, 0, 0),
@@ -249,14 +299,14 @@ class IvcViewer(QwtPlot):
         # X Axis
         self.x_axis = QwtPlotCurve()
         self.x_axis.setPen(axis_pen)
-        self.x_axis.setData((-m, m), (0, 0))
+        self.x_axis.setData((-M, M), (0, 0))
         self.x_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
         # Y Axis
         self.y_axis = QwtPlotCurve()
         self.y_axis.setPen(axis_pen)
-        self.y_axis.setData((0, 0), (-m, m))
+        self.y_axis.setData((0, 0), (-M, M))
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
@@ -293,6 +343,21 @@ class IvcViewer(QwtPlot):
         self._image_dir_path: str = "."
         self._context_menu_works_with_markers: bool = True
 
+    def __adjust_scale(self):
+        self.setAxisScale(QwtPlot.xBottom, -self._voltage_scale, self._voltage_scale)
+        self.setAxisScale(QwtPlot.yLeft, -self._current_scale, self._current_scale)
+        self.__update_align_lower_text()
+
+    def __update_align_lower_text(self):
+        if not self._lower_text:
+            return
+        self._lower_text_marker.setValue(-self._voltage_scale, -self._current_scale)
+
+    def _transform_point_coordinates(self, position: QPoint) -> Point:
+        x = np.round(self.canvasMap(2).invTransform(position.x()), 2)
+        y = np.round(self.canvasMap(0).invTransform(position.y()), 2)
+        return Point(x, y)
+
     @pyqtSlot(QPoint)
     def add_cursor(self, position: QPoint):
         """
@@ -300,147 +365,16 @@ class IvcViewer(QwtPlot):
         :param position: point where cursor should be placed.
         """
 
-        x = np.round(self.canvasMap(2).invTransform(position.x()), 2)
-        y = np.round(self.canvasMap(0).invTransform(position.y()), 2)
-        self._start_pos = Point(x, y)
+        self._start_pos = self._transform_point_coordinates(position)
         self.cursors.set_current_mark(self._start_pos)
         self.cursors.add_cursor(self._start_pos)
         self.cursors.check_points()
 
-    def enable_context_menu_for_markers(self, enable: bool):
-        """
-        Method enables or disables context menu to work with markers.
-        :param enable: if True then context menu can work with markers.
-        """
-
-        self._context_menu_works_with_markers = enable
-
-    @pyqtSlot()
-    def remove_all_cursors(self):
-        """
-        Slot deletes all cursors.
-        """
-
-        print("Удалить все курсоры")
-        self.cursors.detach()
-        print(self.cursors.cursors)
-
-    @pyqtSlot()
-    def save_image(self):
-        """
-        Slot saves graph as image.
-        """
-
-        file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
-                                                self._image_dir_path, "Images (*.png)")[0]
-        if file_name:
-            self._image_dir_path = os.path.dirname(file_name)
-            self.grab().save(file_name)
-
-    def set_path_to_default_directory(self, dir_path: str):
-        """
-        Method sets path to directory where images are saved by default.
-        :param dir_path: default directory path.
-        """
-
-        self._image_dir_path = dir_path
-
-    @pyqtSlot(QPoint)
-    def show_context_menu(self, position: QPoint):
-        """
-        Slot shows context menu.
-        :param position: position of the context menu event that the widget
-        receives.
-        """
-
-        menu = QMenu(self)
-        action_save_image = QAction(qApp.translate("t", "Сохранить график как изображение"), menu)
-        action_save_image.triggered.connect(self.save_image)
-        menu.addAction(action_save_image)
-        if self._context_menu_works_with_markers:
-            action_add_cursor = QAction(qApp.translate("t", "Добавить маркер"), menu)
-            action_add_cursor.triggered.connect(partial(self.add_cursor, position))
-            menu.addAction(action_add_cursor)
-            if not self.cursors.is_empty():
-                action_remove_all_cursors = QAction(qApp.translate("t", "Удалить все курсоры"), menu)
-                action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
-                menu.addAction(action_remove_all_cursors)
-        menu.popup(self.mapToGlobal(position))
-
-    def set_state_adding_cursor(self, state):
-        self._add_cursor_mode = state
-
-    def set_state_removing_cursor(self, state):
-        self._remove_cursor_mode = state
-
-    def get_state_adding_cursor(self):
-        return self._add_cursor_mode
-
-    def get_state_removing_cursor(self):
-        return self._remove_cursor_mode
-
-    def mousePressEvent(self, event):
-        x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
-        y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
-        self._start_pos = Point(x, y)
-        self.cursors.set_current_mark(self._start_pos)
-        if event.button() == Qt.LeftButton:
-            if self._add_cursor_mode:
-                self.cursors.add_cursor(self._start_pos)
-                event.accept()
-            elif self._remove_cursor_mode:
-                self.cursors.del_cursor()
-                event.accept()
-            self.cursors.check_points()
-
-    def mouseMoveEvent(self, event):
-        x = np.round(self.canvasMap(2).invTransform(event.x()), 2)
-        y = np.round(self.canvasMap(0).invTransform(event.y()), 2)
-        _end_pos = Point(x, y)
-        self.cursors.move_cursor(_end_pos)
-
-    def set_center_text(self, text: str):
-        if self._center_text == text:
-            return  # Same text already here
-
-        self.clear_center_text()  # Clear current text
-        self.y_axis.detach()
-        self.x_axis.detach()
-        self.__grid.detach()
-        self.cursors.detach()
-        for curve in self.curves:
-            curve.detach()
-        tt = QwtText(text)
-        font = QFont()
-        font.setPointSize(40)
-        tt.setFont(font)
-        tt.setColor(self.text_color)
-        marker = QwtPlotMarker()
-        marker.setValue(0, 0)
-        marker.setLabel(tt)
-        marker.attach(self)
-        self._center_text_marker = marker
-        self._center_text = text
-
-    def set_lower_text(self, text: str):
-        if self._lower_text == text:
-            return  # Same text already here
-
-        self.clear_lower_text()  # Clear current text
-        tt = QwtText(text)
-        font = QFont()
-        font.setPointSize(10)
-        tt.setFont(font)
-        tt.setColor(self.grid_color)
-        tt.setRenderFlags(Qt.AlignLeft)
-        marker = QwtPlotMarker()
-        marker.setValue(-self._voltage_scale, -self._current_scale)
-        marker.setSpacing(10)
-        marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
-        marker.setLabel(tt)
-        marker.attach(self)
-        self._lower_text_marker = marker
-        self._lower_text = text
+    def add_curve(self) -> PlotCurve:
+        self.curves.append(PlotCurve(self))
+        self.curves[-1].setPen(QPen(QColor(255, 0, 0, 200), 4))
+        self.curves[-1].attach(self)
+        return self.curves[-1]
 
     def clear_center_text(self):
         if self._center_text_marker:
@@ -458,6 +392,23 @@ class IvcViewer(QwtPlot):
             self._lower_text_marker.detach()
             self._lower_text = None
 
+    def clear_min_borders(self):
+        self.__min_border_voltage = abs(float(IvcViewer.min_border_voltage))
+        self.__min_border_current = abs(float(IvcViewer.min_border_current))
+        self.__adjust_scale()
+        self.min_borders_changed.emit()
+
+    def enable_context_menu_for_markers(self, enable: bool):
+        """
+        Method enables or disables context menu to work with markers.
+        :param enable: if True then context menu can work with markers.
+        """
+
+        self._context_menu_works_with_markers = enable
+
+    def get_min_borders(self) -> Tuple[float, float]:
+        return self.__min_border_voltage, self.__min_border_current
+
     def get_minor_axis_step(self) -> Tuple[float, float]:
         """
         Method returns width and height of rectangle of minor axes.
@@ -470,9 +421,115 @@ class IvcViewer(QwtPlot):
         y_step = min([round(y_map[i + 1] - y_map[i], 2) for i in range(len(y_map) - 1)])
         return x_step, y_step
 
-    # min_bounds management
-    def get_min_borders(self) -> Tuple[float, float]:
-        return self.__min_border_voltage, self.__min_border_current
+    def get_state_adding_cursor(self) -> bool:
+        return self._add_cursor_mode
+
+    def get_state_removing_cursor(self) -> bool:
+        return self._remove_cursor_mode
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        """
+        This event handler receives mouse move events for the widget.
+        :param event: mouse move event.
+        """
+
+        _end_pos = self._transform_point_coordinates(event.pos())
+        self.cursors.move_cursor(_end_pos)
+
+    def mousePressEvent(self, event: QMouseEvent):
+        """
+        This event handler receives mouse press events for the widget.
+        :param event: mouse press event.
+        """
+
+        self._start_pos = self._transform_point_coordinates(event.pos())
+        self.cursors.set_current_mark(self._start_pos)
+        if event.button() == Qt.LeftButton:
+            if self._add_cursor_mode:
+                self.cursors.add_cursor(self._start_pos)
+                event.accept()
+            elif self._remove_cursor_mode:
+                self.cursors.detach_current_cursor()
+                event.accept()
+            self.cursors.check_points()
+
+    def redraw_cursors(self):
+        """
+        Method redraws cursors.
+        """
+
+        self.cursors.paint_current_cursor()
+
+    @pyqtSlot()
+    def remove_all_cursors(self):
+        """
+        Slot deletes all cursors.
+        """
+
+        self.cursors.remove_all_cursors()
+
+    @pyqtSlot()
+    def remove_cursor(self):
+        """
+        Slot deletes current cursor.
+        """
+
+        self.cursors.remove_current_cursor()
+
+    @pyqtSlot()
+    def save_image(self):
+        """
+        Slot saves graph as image.
+        """
+
+        file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
+                                                self._image_dir_path, "Images (*.png)")[0]
+        if file_name:
+            self._image_dir_path = os.path.dirname(file_name)
+            self.grab().save(file_name)
+
+    def set_center_text(self, text: str):
+        if self._center_text == text:
+            # Same text already here
+            return
+        self.clear_center_text()  # clear current text
+        self.y_axis.detach()
+        self.x_axis.detach()
+        self.__grid.detach()
+        self.cursors.detach()
+        for curve in self.curves:
+            curve.detach()
+        text = QwtText(text)
+        font = QFont()
+        font.setPointSize(40)
+        text.setFont(font)
+        text.setColor(self.text_color)
+        marker = QwtPlotMarker()
+        marker.setValue(0, 0)
+        marker.setLabel(text)
+        marker.attach(self)
+        self._center_text_marker = marker
+        self._center_text = text
+
+    def set_lower_text(self, text: str):
+        if self._lower_text == text:
+            # Same text already here
+            return
+        self.clear_lower_text()  # Clear current text
+        text = QwtText(text)
+        font = QFont()
+        font.setPointSize(10)
+        text.setFont(font)
+        text.setColor(self.grid_color)
+        text.setRenderFlags(Qt.AlignLeft)
+        marker = QwtPlotMarker()
+        marker.setValue(-self._voltage_scale, -self._current_scale)
+        marker.setSpacing(10)
+        marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        marker.setLabel(text)
+        marker.attach(self)
+        self._lower_text_marker = marker
+        self._lower_text = text
 
     def set_min_borders(self, voltage: float, current: float):
         self.__min_border_voltage = abs(float(voltage))
@@ -480,39 +537,59 @@ class IvcViewer(QwtPlot):
         self.__adjust_scale()
         self.min_borders_changed.emit()
 
-    def clear_min_borders(self):
-        self.__min_border_voltage = abs(float(IvcViewer.min_border_voltage))
-        self.__min_border_current = abs(float(IvcViewer.min_border_current))
-        self.__adjust_scale()
-        self.min_borders_changed.emit()
+    def set_path_to_default_directory(self, dir_path: str):
+        """
+        Method sets path to directory where images are saved by default.
+        :param dir_path: default directory path.
+        """
 
-    def add_curve(self) -> PlotCurve:
-        self.curves.append(PlotCurve(self))
-        self.curves[-1].setPen(QPen(QColor(255, 0, 0, 200), 4))
-        self.curves[-1].attach(self)
-        return self.curves[-1]
-
-    def __adjust_scale(self):
-        self.setAxisScale(QwtPlot.xBottom, -self._voltage_scale, self._voltage_scale)
-        self.setAxisScale(QwtPlot.yLeft, -self._current_scale, self._current_scale)
-        self.__update_align_lower_text()
-
-    def __update_align_lower_text(self):
-        if not self._lower_text:
-            return
-        self._lower_text_marker.setValue(-self._voltage_scale, -self._current_scale)
+        self._image_dir_path = dir_path
 
     def set_scale(self, voltage: float, current: float):
         self._voltage_scale = voltage
         self._current_scale = current
         self.__adjust_scale()
 
-    def redraw_cursors(self):
+    def set_state_adding_cursor(self, state: bool):
+        self._add_cursor_mode = state
+
+    def set_state_removing_cursor(self, state: bool):
+        self._remove_cursor_mode = state
+
+    @pyqtSlot(QPoint)
+    def show_context_menu(self, position: QPoint):
         """
-        Method redraw cursors.
+        Slot shows context menu.
+        :param position: position of the context menu event that the widget
+        receives.
         """
 
-        self.cursors.paint_current_cursor()
+        menu = QMenu(self)
+        dir_name = os.path.dirname(os.path.abspath(__file__))
+        icon = QIcon(os.path.join(dir_name, "media", "save_image.png"))
+        action_save_image = QAction(icon, qApp.translate("t", "Сохранить график как изображение"),
+                                    menu)
+        action_save_image.triggered.connect(self.save_image)
+        menu.addAction(action_save_image)
+        if self._context_menu_works_with_markers:
+            icon = QIcon(os.path.join(dir_name, "media", "add_cursor.png"))
+            action_add_cursor = QAction(icon, qApp.translate("t", "Добавить маркер"), menu)
+            action_add_cursor.triggered.connect(partial(self.add_cursor, position))
+            menu.addAction(action_add_cursor)
+            if not self.cursors.is_empty():
+                pos = self._transform_point_coordinates(position)
+                if self.cursors.find_cursor_for_context_menu(pos):
+                    icon = QIcon(os.path.join(dir_name, "media", "delete_cursor.png"))
+                    action_remove_cursor = QAction(icon, qApp.translate("t", "Удалить маркер"),
+                                                   menu)
+                    action_remove_cursor.triggered.connect(self.remove_cursor)
+                    menu.addAction(action_remove_cursor)
+                icon = QIcon(os.path.join(dir_name, "media", "delete_all.png"))
+                action_remove_all_cursors = QAction(
+                    icon, qApp.translate("t", "Удалить все маркеры"), menu)
+                action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
+                menu.addAction(action_remove_all_cursors)
+        menu.popup(self.mapToGlobal(position))
 
 
 def _plot_curve(curve_plot: PlotCurve) -> None:
