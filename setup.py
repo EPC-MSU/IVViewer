@@ -11,5 +11,5 @@ setup(
         "PythonQwt==0.8.3",
         "dataclasses==0.8"
     ],
-    package_data={"ivviewer", ["media/*"]}
+    package_data={"ivviewer": ["media/*"]}
 )
