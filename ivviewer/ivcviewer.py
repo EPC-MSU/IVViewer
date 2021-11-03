@@ -490,7 +490,7 @@ class IvcViewer(QwtPlot):
             self.grab().save(file_name)
 
     def set_center_text(self, text: str):
-        if self._center_text == text:
+        if isinstance(self._center_text, QwtText) and self._center_text == QwtText(text):
             # Same text already here
             return
         self.clear_center_text()  # clear current text
@@ -513,7 +513,7 @@ class IvcViewer(QwtPlot):
         self._center_text = text
 
     def set_lower_text(self, text: str):
-        if self._lower_text == text:
+        if isinstance(self._lower_text, QwtText) and self._lower_text == text:
             # Same text already here
             return
         self.clear_lower_text()  # Clear current text
