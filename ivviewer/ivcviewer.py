@@ -482,8 +482,9 @@ class IvcViewer(QwtPlot):
         Slot saves graph as image.
         """
 
+        default_file_name = os.path.join(self._image_dir_path, "screenshot.png")
         file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
-                                                self._image_dir_path, "Images (*.png)")[0]
+                                                default_file_name, "Images (*.png)")[0]
         if file_name:
             self._image_dir_path = os.path.dirname(file_name)
             self.grab().save(file_name)
