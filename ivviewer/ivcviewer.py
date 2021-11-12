@@ -590,12 +590,13 @@ class IvcViewer(QwtPlot):
         action_save_image.triggered.connect(self.save_image)
         menu.addAction(action_save_image)
         if self._context_menu_works_with_markers:
+            pos_for_marker = position - QPoint(self.canvas().x(), 0)
             icon = QIcon(os.path.join(dir_name, "media", "add_cursor.png"))
             action_add_cursor = QAction(icon, qApp.translate("t", "Добавить маркер"), menu)
-            action_add_cursor.triggered.connect(partial(self.add_cursor, position))
+            action_add_cursor.triggered.connect(partial(self.add_cursor, pos_for_marker))
             menu.addAction(action_add_cursor)
             if not self.cursors.is_empty():
-                pos = self._transform_point_coordinates(position)
+                pos = self._transform_point_coordinates(pos_for_marker)
                 if self.cursors.find_cursor_for_context_menu(pos):
                     icon = QIcon(os.path.join(dir_name, "media", "delete_cursor.png"))
                     action_remove_cursor = QAction(icon, qApp.translate("t", "Удалить маркер"),
