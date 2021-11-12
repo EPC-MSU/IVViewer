@@ -8,7 +8,7 @@ from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
 
-__all__ = ["IvcViewer"]
+__all__ = ["Curve", "IvcViewer"]
 M = 10000
 
 
@@ -26,11 +26,11 @@ class Point:
 
 class PlotCurve(QwtPlotCurve):
 
-    def __init__(self, owner, parent=None):
+    def __init__(self, owner: "IvcViewer", parent=None):
         super().__init__(parent)
         self.curve = None
         self.parent = parent
-        self.owner = owner
+        self.owner: "IvcViewer" = owner
 
     def __set_curve(self, curve: Optional[Curve] = None):
         self.curve = curve
@@ -58,19 +58,19 @@ class IvcCursor:
 
     CROSS_SIZE = 10  # default size of white cross in px
 
-    def __init__(self, pos: Point, plot):
-        self.plot = plot
-        self._x_axis = QwtPlotCurve()
-        self._y_axis = QwtPlotCurve()
-        self._sign = QwtPlotMarker()
-        self.x = pos.x
-        self.y = pos.y
+    def __init__(self, pos: Point, plot: "IvcViewer"):
+        self.plot: "IvcViewer" = plot
+        self.x: float = pos.x
+        self.y: float = pos.y
+        self._x_axis: QwtPlotCurve = QwtPlotCurve()
+        self._y_axis: QwtPlotCurve = QwtPlotCurve()
         self._x_axis.setData((pos.x, pos.x), (-M, M))
         self._y_axis.setData((-M, M), (pos.y, pos.y))
         cursor_text = QwtText("U = {}, I = {}".format(pos.x, pos.y))
         cursor_text.setFont(QFont())
         cursor_text.font().setPointSize(10)
         cursor_text.setRenderFlags(Qt.AlignLeft)
+        self._sign: QwtPlotMarker = QwtPlotMarker()
         self._sign.setValue(pos.x, pos.y)
         self._sign.setSpacing(10)
         self._sign.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
@@ -124,8 +124,8 @@ class IvcCursor:
         :param color: color for horizontal and vertical lines.
         """
 
-        pen = QPen(color, 2, Qt.DotLine)
         self._sign.label().setColor(color)
+        pen = QPen(color, 2, Qt.DotLine)
         self._x_axis.setPen(pen)
         self._y_axis.setPen(pen)
         pen = QPen(QColor(255, 255, 255), 2, Qt.SolidLine)
@@ -139,13 +139,13 @@ class IvcCursors:
     This class is array of objects of class IvcCursor.
     """
 
-    cursors = []
-    current_color = QColor(255, 0, 0)  # color of select cursor
-    last_color = QColor(102, 255, 0)  # color for rest cursors
-    k_radius = 0.2  # coefficient of radius of action for select cursor
+    cursors: List[IvcCursor] = []
+    current_color: QColor = QColor(255, 0, 0)  # color of select cursor
+    last_color: QColor = QColor(102, 255, 0)  # color for rest cursors
+    k_radius: float = 0.2  # coefficient of radius of action for select cursor
 
     def __init__(self, plot: "IvcViewer"):
-        self.plot = plot
+        self.plot: "IvcViewer" = plot
         self.current_index = None
 
     def _find_cursor_at_point(self, pos: Point) -> Optional[int]:
@@ -175,7 +175,7 @@ class IvcCursors:
         self.cursors[-1].attach(self.plot)
         self.current_index = len(self.cursors) - 1
 
-    def attach(self, plot):
+    def attach(self, plot: "IvcViewer"):
         """
         Method attaches all cursors to plot.
         :param plot: plot.
@@ -218,10 +218,18 @@ class IvcCursors:
             return True
         return False
 
+    def get_list_of_all_cursors(self) -> List[IvcCursor]:
+        """
+        Method returns list with all cursors.
+        :return: list with all cursors.
+        """
+
+        return self.cursors
+
     def is_empty(self) -> bool:
         """
         Method checks if there are cursors.
-        :return: True if object has no cursors otherwise True.
+        :return: True if object has no cursors otherwise False.
         """
 
         return not bool(self.cursors)
@@ -268,17 +276,18 @@ class IvcCursors:
 
 class IvcViewer(QwtPlot):
 
-    curves = []
-    min_border_current = 0.5
-    min_border_voltage = 1.0
+    curves: List[PlotCurve] = []
+    min_border_current: float = 0.5
+    min_border_voltage: float = 1.0
     min_borders_changed = pyqtSignal()
 
-    def __init__(self, owner, parent=None, solid_axis_enabled=True, grid_color=QColor(0, 0, 0),
-                 back_color=QColor(0xe1, 0xed, 0xeb), text_color=QColor(255, 0, 0),
-                 axis_sign_enabled=True):
+    def __init__(self, owner: "Viewer", parent=None, solid_axis_enabled: bool = True,
+                 grid_color: QColor = QColor(0, 0, 0),
+                 back_color: QColor = QColor(0xe1, 0xed, 0xeb),
+                 text_color: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True):
         super().__init__(parent)
         self.__owner = owner
-        self.__grid = QwtPlotGrid()
+        self.__grid: QwtPlotGrid = QwtPlotGrid()
         self.__grid.enableXMin(True)
         self.__grid.enableYMin(True)
         if solid_axis_enabled:
@@ -288,28 +297,28 @@ class IvcViewer(QwtPlot):
         self.__grid.setMinorPen(QPen(QColor(128, 128, 128), 0, Qt.DotLine))
         # self.__grid.updateScaleDiv(20, 30)
         self.__grid.attach(self)
-        self.text_color = text_color
-        self.grid_color = grid_color
+        self.text_color: QColor = text_color
+        self.grid_color: QColor = grid_color
 
-        axis_font = QFont()
-        axis_font.pointSize = 20
-        self.setCanvasBackground(QBrush(back_color, 1))
+        self.setCanvasBackground(QBrush(back_color, Qt.SolidPattern))
         self.canvas().setCursor(QCursor(Qt.ArrowCursor))
-        axis_pen = QPen(self.grid_color, 2)
         # X Axis
-        self.x_axis = QwtPlotCurve()
+        axis_pen = QPen(self.grid_color, 2)
+        self.x_axis: QwtPlotCurve = QwtPlotCurve()
         self.x_axis.setPen(axis_pen)
         self.x_axis.setData((-M, M), (0, 0))
         self.x_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
         # Y Axis
-        self.y_axis = QwtPlotCurve()
+        self.y_axis: QwtPlotCurve = QwtPlotCurve()
         self.y_axis.setPen(axis_pen)
         self.y_axis.setData((0, 0), (-M, M))
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
+        axis_font = QFont()
+        axis_font.pointSize = 20
         t_x = QwtText(qApp.translate("t", "\nНапряжение (В)"))
         t_x.setFont(axis_font)
         self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
@@ -323,20 +332,20 @@ class IvcViewer(QwtPlot):
             self.enableAxis(QwtPlot.yLeft, False)
 
         # Initial setup for axis scales
-        self.__min_border_voltage = abs(float(IvcViewer.min_border_voltage))
-        self.__min_border_current = abs(float(IvcViewer.min_border_current))
+        self.__min_border_voltage: float = abs(float(IvcViewer.min_border_voltage))
+        self.__min_border_current: float = abs(float(IvcViewer.min_border_current))
         self.setAxisScale(QwtPlot.xBottom, -self.__min_border_voltage, self.__min_border_voltage)
         self.setAxisScale(QwtPlot.yLeft, -self.__min_border_current, self.__min_border_current)
-        self._current_scale = 0.4
-        self._voltage_scale = 1.5
-        self.cursors = IvcCursors(self)
+        self._current_scale: float = 0.4
+        self._voltage_scale: float = 1.5
+        self.cursors: IvcCursors = IvcCursors(self)
         self._start_pos = None
-        self._lower_text_marker = None
-        self._center_text_marker = None
-        self._center_text = None
+        self._center_text: QwtText = None
+        self._center_text_marker: QwtPlotMarker = None
         self._lower_text = None
-        self._add_cursor_mode = False
-        self._remove_cursor_mode = False
+        self._lower_text_marker = None
+        self._add_cursor_mode: bool = False
+        self._remove_cursor_mode: bool = False
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
@@ -379,6 +388,7 @@ class IvcViewer(QwtPlot):
     def clear_center_text(self):
         if self._center_text_marker:
             self._center_text_marker.detach()
+            self._center_text_marker = None
             self._center_text = None
             self.cursors.attach(self)
             self.y_axis.attach(self)
@@ -390,6 +400,7 @@ class IvcViewer(QwtPlot):
     def clear_lower_text(self):
         if self._lower_text_marker:
             self._lower_text_marker.detach()
+            self._lower_text_marker = None
             self._lower_text = None
 
     def clear_min_borders(self):
@@ -405,6 +416,14 @@ class IvcViewer(QwtPlot):
         """
 
         self._context_menu_works_with_markers = enable
+
+    def get_list_of_all_cursors(self) -> List[IvcCursor]:
+        """
+        Method returns list of all cursors.
+        :return: list of all cursors.
+        """
+
+        return self.cursors.get_list_of_all_cursors()
 
     def get_min_borders(self) -> Tuple[float, float]:
         return self.__min_border_voltage, self.__min_border_current
@@ -444,7 +463,7 @@ class IvcViewer(QwtPlot):
 
         self._start_pos = self._transform_point_coordinates(event.pos())
         self.cursors.set_current_mark(self._start_pos)
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton and not self._center_text_marker:
             if self._add_cursor_mode:
                 self.cursors.add_cursor(self._start_pos)
                 event.accept()
@@ -500,37 +519,33 @@ class IvcViewer(QwtPlot):
         self.cursors.detach()
         for curve in self.curves:
             curve.detach()
-        text = QwtText(text)
         font = QFont()
         font.setPointSize(40)
-        text.setFont(font)
-        text.setColor(self.text_color)
-        marker = QwtPlotMarker()
-        marker.setValue(0, 0)
-        marker.setLabel(text)
-        marker.attach(self)
-        self._center_text_marker = marker
-        self._center_text = text
+        self._center_text = QwtText(text)
+        self._center_text.setFont(font)
+        self._center_text.setColor(self.text_color)
+        self._center_text_marker = QwtPlotMarker()
+        self._center_text_marker.setValue(0, 0)
+        self._center_text_marker.setLabel(self._center_text)
+        self._center_text_marker.attach(self)
 
     def set_lower_text(self, text: str):
         if isinstance(self._lower_text, QwtText) and self._lower_text == text:
             # Same text already here
             return
         self.clear_lower_text()  # Clear current text
-        text = QwtText(text)
         font = QFont()
         font.setPointSize(10)
-        text.setFont(font)
-        text.setColor(self.grid_color)
-        text.setRenderFlags(Qt.AlignLeft)
-        marker = QwtPlotMarker()
-        marker.setValue(-self._voltage_scale, -self._current_scale)
-        marker.setSpacing(10)
-        marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
-        marker.setLabel(text)
-        marker.attach(self)
-        self._lower_text_marker = marker
-        self._lower_text = text
+        self._lower_text = QwtText(text)
+        self._lower_text.setFont(font)
+        self._lower_text.setColor(self.grid_color)
+        self._lower_text.setRenderFlags(Qt.AlignLeft)
+        self._lower_text_marker = QwtPlotMarker()
+        self._lower_text_marker.setValue(-self._voltage_scale, -self._current_scale)
+        self._lower_text_marker.setSpacing(10)
+        self._lower_text_marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        self._lower_text_marker.setLabel(self._lower_text)
+        self._lower_text_marker.attach(self)
 
     def set_min_borders(self, voltage: float, current: float):
         self.__min_border_voltage = abs(float(voltage))
@@ -565,6 +580,8 @@ class IvcViewer(QwtPlot):
         receives.
         """
 
+        if self._center_text_marker:
+            return
         menu = QMenu(self)
         dir_name = os.path.dirname(os.path.abspath(__file__))
         icon = QIcon(os.path.join(dir_name, "media", "save_image.png"))
@@ -593,7 +610,7 @@ class IvcViewer(QwtPlot):
         menu.popup(self.mapToGlobal(position))
 
 
-def _plot_curve(curve_plot: PlotCurve) -> None:
+def _plot_curve(curve_plot: PlotCurve):
     if curve_plot.curve is None or curve_plot.curve == (None, None):
         curve_plot.setData((), ())
     else:
