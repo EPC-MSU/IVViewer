@@ -10,6 +10,8 @@ from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
 
 __all__ = ["Curve", "IvcViewer"]
 M = 10000
+DEFAULT_AXIS_FONT_SIZE: int = 20
+DEFAULT_TITLE_FONT_SIZE: int = 20
 
 
 @dataclass
@@ -284,7 +286,9 @@ class IvcViewer(QwtPlot):
     def __init__(self, owner: "Viewer", parent=None, solid_axis_enabled: bool = True,
                  grid_color: QColor = QColor(0, 0, 0),
                  back_color: QColor = QColor(0xe1, 0xed, 0xeb),
-                 text_color: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True):
+                 text_color: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True,
+                 axis_font_size: int = DEFAULT_AXIS_FONT_SIZE,
+                 title_font_size: int = DEFAULT_TITLE_FONT_SIZE):
         super().__init__(parent)
         self.__owner = owner
         self.__grid: QwtPlotGrid = QwtPlotGrid()
@@ -317,15 +321,18 @@ class IvcViewer(QwtPlot):
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
-        axis_font = QFont()
-        axis_font.pointSize = 20
+        self._axis_font_size: int = axis_font_size
+        self._title_font_size: int = title_font_size
+        axis_font = QFont("Consolas", self._axis_font_size)
+        title_font = QFont("Consolas", self._title_font_size)
+        title_font.pointSize = self._title_font_size
         t_x = QwtText(qApp.translate("t", "\nНапряжение (В)"))
-        t_x.setFont(axis_font)
-        self.setAxisFont(QwtPlot.xBottom, QFont("Consolas", 20))
+        t_x.setFont(title_font)
+        self.setAxisFont(QwtPlot.xBottom, axis_font)
         self.setAxisTitle(QwtPlot.xBottom, t_x)
         t_y = QwtText(qApp.translate("t", "Ток (мА)\n"))
-        t_y.setFont(axis_font)
-        self.setAxisFont(QwtPlot.yLeft, QFont("Consolas", 20))
+        t_y.setFont(title_font)
+        self.setAxisFont(QwtPlot.yLeft, axis_font)
         self.setAxisTitle(QwtPlot.yLeft, t_y)
         if not axis_sign_enabled:
             self.enableAxis(QwtPlot.xBottom, False)
