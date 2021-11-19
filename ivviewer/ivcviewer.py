@@ -656,6 +656,20 @@ class IvcViewer(QwtPlot):
                 menu.addAction(action_remove_all_cursors)
         menu.popup(self.mapToGlobal(position))
 
+    def show_rect_axes(self):
+        """
+        Method shows plot in rectangle each side of which is an axis.
+        """
+
+        for axis in (QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight):
+            self.enableAxis(axis, True)
+            self.setAxisMaxMajor(axis, 5)
+            self.setAxisMaxMinor(axis, 5)
+        self.setAxisFont(QwtPlot.xTop, self.axis_font)
+        self.setAxisFont(QwtPlot.yRight, self.axis_font)
+        self.setAxisScale(QwtPlot.xTop, -self._voltage_scale, self._voltage_scale)
+        self.setAxisScale(QwtPlot.yRight, -self._current_scale, self._current_scale)
+
 
 def _plot_curve(curve_plot: PlotCurve):
     if curve_plot.curve is None or curve_plot.curve == (None, None):
