@@ -5,7 +5,7 @@ File with example how to use Viewer.
 import sys
 import numpy as np
 from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import QApplication
 from .ivcviewer import Curve
 from .window import Viewer
@@ -13,7 +13,8 @@ from .window import Viewer
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = Viewer()
+    window = Viewer(axis_font=QFont("Lucida Console", 10), marker_font=QFont("Times", 15),
+                    title_font=QFont("Monaco", 30))
     window.plot.set_scale(6.0, 15.0)
 
     # Add three curves

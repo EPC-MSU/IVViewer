@@ -8,10 +8,11 @@ from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
 
-__all__ = ["Curve", "IvcViewer"]
+__all__ = ["Curve", "DEFAULT_AXIS_FONT", "DEFAULT_MARKER_FONT", "DEFAULT_TITLE_FONT", "IvcViewer"]
 M = 10000
-DEFAULT_AXIS_FONT_SIZE: int = 20
-DEFAULT_TITLE_FONT_SIZE: int = 20
+DEFAULT_AXIS_FONT: QFont = QFont("Consolas", 20)
+DEFAULT_MARKER_FONT: QFont = QFont("Consolas", 10)
+DEFAULT_TITLE_FONT: QFont = QFont("Consolas", 20)
 
 
 @dataclass
@@ -58,9 +59,15 @@ class IvcCursor:
     This class is marker with x, y - axes, it shows coordinates for selected point.
     """
 
-    CROSS_SIZE = 10  # default size of white cross in px
+    CROSS_SIZE: int = 10  # default size of white cross in px
 
-    def __init__(self, pos: Point, plot: "IvcViewer"):
+    def __init__(self, pos: Point, plot: "IvcViewer", font: QFont = DEFAULT_MARKER_FONT):
+        """
+        :param pos: point at which to place cursor;
+        :param plot: plot on which to place cursor;
+        :param font: font of text at cursor.
+        """
+
         self.plot: "IvcViewer" = plot
         self.x: float = pos.x
         self.y: float = pos.y
@@ -68,9 +75,9 @@ class IvcCursor:
         self._y_axis: QwtPlotCurve = QwtPlotCurve()
         self._x_axis.setData((pos.x, pos.x), (-M, M))
         self._y_axis.setData((-M, M), (pos.y, pos.y))
+        self.font: QFont = font
         cursor_text = QwtText("U = {}, I = {}".format(pos.x, pos.y))
-        cursor_text.setFont(QFont())
-        cursor_text.font().setPointSize(10)
+        cursor_text.setFont(self.font)
         cursor_text.setRenderFlags(Qt.AlignLeft)
         self._sign: QwtPlotMarker = QwtPlotMarker()
         self._sign.setValue(pos.x, pos.y)
@@ -146,9 +153,15 @@ class IvcCursors:
     last_color: QColor = QColor(102, 255, 0)  # color for rest cursors
     k_radius: float = 0.2  # coefficient of radius of action for select cursor
 
-    def __init__(self, plot: "IvcViewer"):
+    def __init__(self, plot: "IvcViewer", font: QFont = DEFAULT_MARKER_FONT):
+        """
+        :param plot: plot on which to place cursors;
+        :param font: font of text at cursors.
+        """
+
+        self.current_index: int = None
+        self.font: QFont = font
         self.plot: "IvcViewer" = plot
-        self.current_index = None
 
     def _find_cursor_at_point(self, pos: Point) -> Optional[int]:
         """
@@ -172,7 +185,7 @@ class IvcCursors:
 
         for cursor in self.cursors:
             cursor.paint(self.last_color)
-        self.cursors.append(IvcCursor(pos, self.plot))
+        self.cursors.append(IvcCursor(pos, self.plot, self.font))
         self.cursors[-1].paint(self.current_color)
         self.cursors[-1].attach(self.plot)
         self.current_index = len(self.cursors) - 1
@@ -281,14 +294,27 @@ class IvcViewer(QwtPlot):
     curves: List[PlotCurve] = []
     min_border_current: float = 0.5
     min_border_voltage: float = 1.0
-    min_borders_changed = pyqtSignal()
+    min_borders_changed: pyqtSignal = pyqtSignal()
 
     def __init__(self, owner: "Viewer", parent=None, solid_axis_enabled: bool = True,
                  grid_color: QColor = QColor(0, 0, 0),
                  back_color: QColor = QColor(0xe1, 0xed, 0xeb),
                  text_color: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True,
-                 axis_font_size: int = DEFAULT_AXIS_FONT_SIZE,
-                 title_font_size: int = DEFAULT_TITLE_FONT_SIZE):
+                 axis_font: QFont = DEFAULT_AXIS_FONT, marker_font: QFont = DEFAULT_MARKER_FONT,
+                 title_font: QFont = DEFAULT_TITLE_FONT):
+        """
+        :param owner:
+        :param parent:
+        :param solid_axis_enabled: if True then axes will be shown with solid lines;
+        :param grid_color: grid color;
+        :param back_color: canvas background color;
+        :param text_color: color of text at center of plot;
+        :param axis_sign_enabled: if True then labels of axes will be displayed;
+        :param axis_font: font for values on axes;
+        :param marker_font: font of text at markers;
+        :param title_font: axis titles font.
+        """
+
         super().__init__(parent)
         self.__owner = owner
         self.__grid: QwtPlotGrid = QwtPlotGrid()
@@ -321,18 +347,15 @@ class IvcViewer(QwtPlot):
         self.y_axis.attach(self)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
-        self._axis_font_size: int = axis_font_size
-        self._title_font_size: int = title_font_size
-        axis_font = QFont("Consolas", self._axis_font_size)
-        title_font = QFont("Consolas", self._title_font_size)
-        title_font.pointSize = self._title_font_size
+        self.axis_font: QFont = axis_font
+        self.title_font: QFont = title_font
         t_x = QwtText(qApp.translate("t", "\nНапряжение (В)"))
-        t_x.setFont(title_font)
-        self.setAxisFont(QwtPlot.xBottom, axis_font)
+        t_x.setFont(self.title_font)
+        self.setAxisFont(QwtPlot.xBottom, self.axis_font)
         self.setAxisTitle(QwtPlot.xBottom, t_x)
         t_y = QwtText(qApp.translate("t", "Ток (мА)\n"))
-        t_y.setFont(title_font)
-        self.setAxisFont(QwtPlot.yLeft, axis_font)
+        t_y.setFont(self.title_font)
+        self.setAxisFont(QwtPlot.yLeft, self.axis_font)
         self.setAxisTitle(QwtPlot.yLeft, t_y)
         if not axis_sign_enabled:
             self.enableAxis(QwtPlot.xBottom, False)
@@ -345,7 +368,7 @@ class IvcViewer(QwtPlot):
         self.setAxisScale(QwtPlot.yLeft, -self.__min_border_current, self.__min_border_current)
         self._current_scale: float = 0.4
         self._voltage_scale: float = 1.5
-        self.cursors: IvcCursors = IvcCursors(self)
+        self.cursors: IvcCursors = IvcCursors(self, marker_font)
         self._start_pos = None
         self._center_text: QwtText = None
         self._center_text_marker: QwtPlotMarker = None
