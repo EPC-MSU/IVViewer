@@ -15,6 +15,8 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = Viewer(axis_font=QFont("Lucida Console", 10), marker_font=QFont("Times", 15),
                     title_font=QFont("Monaco", 30))
+    window.plot.set_x_axis_title("Напряжение, В")
+    window.plot.set_y_axis_title("Ток, мА")
     window.plot.set_scale(6.0, 15.0)
 
     # Add three curves

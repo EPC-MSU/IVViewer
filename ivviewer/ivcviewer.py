@@ -602,6 +602,22 @@ class IvcViewer(QwtPlot):
     def set_state_removing_cursor(self, state: bool):
         self._remove_cursor_mode = state
 
+    def set_x_axis_title(self, title: str):
+        """
+        Method sets new title to X axis.
+        :param title: new title for X axis.
+        """
+
+        self.setAxisTitle(QwtPlot.xBottom, title)
+
+    def set_y_axis_title(self, title: str):
+        """
+        Method sets new title to Y axis.
+        :param title: new title for Y axis.
+        """
+
+        self.setAxisTitle(QwtPlot.yLeft, title)
+
     @pyqtSlot(QPoint)
     def show_context_menu(self, position: QPoint):
         """
