@@ -638,20 +638,20 @@ class IvcViewer(QwtPlot):
         if self._context_menu_works_with_markers:
             pos_for_marker = position - QPoint(self.canvas().x(), 0)
             icon = QIcon(os.path.join(dir_name, "media", "add_cursor.png"))
-            action_add_cursor = QAction(icon, qApp.translate("t", "Добавить маркер"), menu)
+            action_add_cursor = QAction(icon, qApp.translate("t", "Добавить метку"), menu)
             action_add_cursor.triggered.connect(partial(self.add_cursor, pos_for_marker))
             menu.addAction(action_add_cursor)
             if not self.cursors.is_empty():
                 pos = self._transform_point_coordinates(pos_for_marker)
                 if self.cursors.find_cursor_for_context_menu(pos):
                     icon = QIcon(os.path.join(dir_name, "media", "delete_cursor.png"))
-                    action_remove_cursor = QAction(icon, qApp.translate("t", "Удалить маркер"),
+                    action_remove_cursor = QAction(icon, qApp.translate("t", "Удалить метку"),
                                                    menu)
                     action_remove_cursor.triggered.connect(self.remove_cursor)
                     menu.addAction(action_remove_cursor)
                 icon = QIcon(os.path.join(dir_name, "media", "delete_all.png"))
                 action_remove_all_cursors = QAction(
-                    icon, qApp.translate("t", "Удалить все маркеры"), menu)
+                    icon, qApp.translate("t", "Удалить все метки"), menu)
                 action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
                 menu.addAction(action_remove_all_cursors)
         menu.popup(self.mapToGlobal(position))
