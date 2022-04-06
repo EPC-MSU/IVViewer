@@ -1,7 +1,9 @@
 import os
-from dataclasses import dataclass
+import platform
+from datetime import datetime
 from functools import partial
 from typing import List, Optional, Tuple
+from dataclasses import dataclass
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QCoreApplication as qApp, QPoint, Qt
 from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
@@ -12,6 +14,7 @@ __all__ = ["Curve", "DEFAULT_AXIS_FONT", "DEFAULT_MARKER_FONT", "DEFAULT_TITLE_F
 M = 10000
 DEFAULT_AXIS_FONT: QFont = QFont("Consolas", 20)
 DEFAULT_MARKER_FONT: QFont = QFont("Consolas", 10)
+DEFAULT_SCREENSHOT_FILE_NAME_BASE: str = "screenshot"
 DEFAULT_TITLE_FONT: QFont = QFont("Consolas", 20)
 
 
@@ -172,8 +175,7 @@ class IvcCursors:
 
         width, height = self.plot.get_minor_axis_step()
         for cursor in self.cursors:
-            if (np.abs(cursor.x - pos.x) < self.k_radius * width and
-                    np.abs(cursor.y - pos.y) < self.k_radius * height):
+            if np.abs(cursor.x - pos.x) < self.k_radius * width and np.abs(cursor.y - pos.y) < self.k_radius * height:
                 return self.cursors.index(cursor)
         return None
 
@@ -297,11 +299,11 @@ class IvcViewer(QwtPlot):
     min_borders_changed: pyqtSignal = pyqtSignal()
 
     def __init__(self, owner: "Viewer", parent=None, solid_axis_enabled: bool = True,
-                 grid_color: QColor = QColor(0, 0, 0),
-                 back_color: QColor = QColor(0xe1, 0xed, 0xeb),
+                 grid_color: QColor = QColor(0, 0, 0), back_color: QColor = QColor(0xe1, 0xed, 0xeb),
                  text_color: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True,
                  axis_font: QFont = DEFAULT_AXIS_FONT, marker_font: QFont = DEFAULT_MARKER_FONT,
-                 title_font: QFont = DEFAULT_TITLE_FONT):
+                 title_font: QFont = DEFAULT_TITLE_FONT,
+                 screenshot_file_name_base: str = DEFAULT_SCREENSHOT_FILE_NAME_BASE):
         """
         :param owner:
         :param parent:
@@ -312,7 +314,8 @@ class IvcViewer(QwtPlot):
         :param axis_sign_enabled: if True then labels of axes will be displayed;
         :param axis_font: font for values on axes;
         :param marker_font: font of text at markers;
-        :param title_font: axis titles font.
+        :param title_font: axis titles font;
+        :param screenshot_file_name_base: base name for screenshot file.
         """
 
         super().__init__(parent)
@@ -381,6 +384,7 @@ class IvcViewer(QwtPlot):
         self.customContextMenuRequested.connect(self.show_context_menu)
         self._image_dir_path: str = "."
         self._context_menu_works_with_markers: bool = True
+        self._screenshot_file_name_base: str = screenshot_file_name_base
 
     def __adjust_scale(self):
         self.setAxisScale(QwtPlot.xBottom, -self._voltage_scale, self._voltage_scale)
@@ -531,9 +535,15 @@ class IvcViewer(QwtPlot):
         Slot saves graph as image.
         """
 
-        default_file_name = os.path.join(self._image_dir_path, "screenshot.png")
-        file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
-                                                default_file_name, "Images (*.png)")[0]
+        file_name = self._screenshot_file_name_base + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"
+        default_file_name = os.path.join(self._image_dir_path, file_name)
+        if platform.system().lower() == "windows":
+            file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
+                                                    default_file_name, "Images (*.png)")[0]
+        else:
+            file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
+                                                    default_file_name, "Images (*.png)",
+                                                    options=QFileDialog.DontUseNativeDialog)[0]
         if file_name:
             self._image_dir_path = os.path.dirname(file_name)
             self.grab().save(file_name)
@@ -622,8 +632,7 @@ class IvcViewer(QwtPlot):
     def show_context_menu(self, position: QPoint):
         """
         Slot shows context menu.
-        :param position: position of the context menu event that the widget
-        receives.
+        :param position: position of the context menu event that the widget receives.
         """
 
         if self._center_text_marker:
@@ -631,8 +640,7 @@ class IvcViewer(QwtPlot):
         menu = QMenu(self)
         dir_name = os.path.dirname(os.path.abspath(__file__))
         icon = QIcon(os.path.join(dir_name, "media", "save_image.png"))
-        action_save_image = QAction(icon, qApp.translate("t", "Сохранить график как изображение"),
-                                    menu)
+        action_save_image = QAction(icon, qApp.translate("t", "Сохранить график как изображение"), menu)
         action_save_image.triggered.connect(self.save_image)
         menu.addAction(action_save_image)
         if self._context_menu_works_with_markers:
@@ -645,13 +653,11 @@ class IvcViewer(QwtPlot):
                 pos = self._transform_point_coordinates(pos_for_marker)
                 if self.cursors.find_cursor_for_context_menu(pos):
                     icon = QIcon(os.path.join(dir_name, "media", "delete_cursor.png"))
-                    action_remove_cursor = QAction(icon, qApp.translate("t", "Удалить метку"),
-                                                   menu)
+                    action_remove_cursor = QAction(icon, qApp.translate("t", "Удалить метку"), menu)
                     action_remove_cursor.triggered.connect(self.remove_cursor)
                     menu.addAction(action_remove_cursor)
                 icon = QIcon(os.path.join(dir_name, "media", "delete_all.png"))
-                action_remove_all_cursors = QAction(
-                    icon, qApp.translate("t", "Удалить все метки"), menu)
+                action_remove_all_cursors = QAction(icon, qApp.translate("t", "Удалить все метки"), menu)
                 action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
                 menu.addAction(action_remove_all_cursors)
         menu.popup(self.mapToGlobal(position))
