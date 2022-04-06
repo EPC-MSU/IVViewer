@@ -298,7 +298,7 @@ class IvcViewer(QwtPlot):
     min_border_voltage: float = 1.0
     min_borders_changed: pyqtSignal = pyqtSignal()
 
-    def __init__(self, owner: "Viewer", parent=None, solid_axis_enabled: bool = True,
+    def __init__(self, owner, parent=None, solid_axis_enabled: bool = True,
                  grid_color: QColor = QColor(0, 0, 0), back_color: QColor = QColor(0xe1, 0xed, 0xeb),
                  text_color: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True,
                  axis_font: QFont = DEFAULT_AXIS_FONT, marker_font: QFont = DEFAULT_MARKER_FONT,
