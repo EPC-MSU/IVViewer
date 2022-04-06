@@ -315,7 +315,7 @@ class IvcViewer(QwtPlot):
         :param axis_font: font for values on axes;
         :param marker_font: font of text at markers;
         :param title_font: axis titles font;
-        :param screenshot_file_name_base: base name for screenshot file.
+        :param screenshot_file_name_base: base name for screenshot files.
         """
 
         super().__init__(parent)
@@ -382,8 +382,9 @@ class IvcViewer(QwtPlot):
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
-        self._image_dir_path: str = "."
         self._context_menu_works_with_markers: bool = True
+        self._screenshot_dir_constant: bool = False
+        self._screenshot_dir_path: str = "."
         self._screenshot_file_name_base: str = screenshot_file_name_base
 
     def __adjust_scale(self):
@@ -536,7 +537,9 @@ class IvcViewer(QwtPlot):
         """
 
         file_name = self._screenshot_file_name_base + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"
-        default_file_name = os.path.join(self._image_dir_path, file_name)
+        if not os.path.isdir(self._screenshot_dir_path):
+            os.makedirs(self._screenshot_dir_path)
+        default_file_name = os.path.join(self._screenshot_dir_path, file_name)
         if platform.system().lower() == "windows":
             file_name = QFileDialog.getSaveFileName(self, qApp.translate("t", "Сохранить изображение"),
                                                     default_file_name, "Images (*.png)")[0]
@@ -545,7 +548,8 @@ class IvcViewer(QwtPlot):
                                                     default_file_name, "Images (*.png)",
                                                     options=QFileDialog.DontUseNativeDialog)[0]
         if file_name:
-            self._image_dir_path = os.path.dirname(file_name)
+            if not self._screenshot_dir_constant:
+                self._screenshot_dir_path = os.path.dirname(file_name)
             self.grab().save(file_name)
 
     def set_center_text(self, text: str):
@@ -568,6 +572,14 @@ class IvcViewer(QwtPlot):
         self._center_text_marker.setValue(0, 0)
         self._center_text_marker.setLabel(self._center_text)
         self._center_text_marker.attach(self)
+
+    def set_constant_screenshot_directory(self, status: bool = True):
+        """
+        Method sets mode in which default directory for screenshots does not change.
+        :param status: if True then default directory for screenshots will not be changed.
+        """
+
+        self._screenshot_dir_constant = status
 
     def set_lower_text(self, text: str):
         if isinstance(self._lower_text, QwtText) and self._lower_text == text:
@@ -593,13 +605,14 @@ class IvcViewer(QwtPlot):
         self.__adjust_scale()
         self.min_borders_changed.emit()
 
-    def set_path_to_default_directory(self, dir_path: str):
+    def set_path_to_screenshot_directory(self, dir_path: str):
         """
-        Method sets path to directory where images are saved by default.
+        Method sets path to directory where screenshots are saved by default.
         :param dir_path: default directory path.
         """
 
-        self._image_dir_path = dir_path
+        if os.path.isdir(dir_path):
+            self._screenshot_dir_path = dir_path
 
     def set_scale(self, voltage: float, current: float):
         self._voltage_scale = voltage
