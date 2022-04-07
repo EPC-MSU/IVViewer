@@ -31,6 +31,9 @@ class Point:
 
 
 class PlotCurve(QwtPlotCurve):
+    """
+    Class for curve.
+    """
 
     def __init__(self, owner: "IvcViewer", parent=None):
         super().__init__(parent)
@@ -151,18 +154,21 @@ class IvcCursors:
     This class is array of objects of class IvcCursor.
     """
 
-    cursors: List[IvcCursor] = []
-    current_color: QColor = QColor(255, 0, 0)  # color of select cursor
-    last_color: QColor = QColor(102, 255, 0)  # color for rest cursors
-    k_radius: float = 0.2  # coefficient of radius of action for select cursor
+    K_RADIUS: float = 0.2  # coefficient of radius of action for select cursor
 
-    def __init__(self, plot: "IvcViewer", font: QFont = DEFAULT_MARKER_FONT):
+    def __init__(self, plot: "IvcViewer", font: QFont = DEFAULT_MARKER_FONT,
+                 color_for_rest: QColor = QColor(102, 255, 0), color_for_selected: QColor = QColor(255, 0, 0)):
         """
         :param plot: plot on which to place cursors;
-        :param font: font of text at cursors.
+        :param font: font of text at cursors;
+        :param color_for_rest: color for unselected cursors;
+        :param color_for_selected: color for selected cursor.
         """
 
+        self.color_for_rest: QColor = color_for_rest
+        self.color_for_selected: QColor = color_for_selected
         self.current_index: int = None
+        self.cursors: List[IvcCursor] = []
         self.font: QFont = font
         self.plot: "IvcViewer" = plot
 
@@ -175,7 +181,7 @@ class IvcCursors:
 
         width, height = self.plot.get_minor_axis_step()
         for cursor in self.cursors:
-            if np.abs(cursor.x - pos.x) < self.k_radius * width and np.abs(cursor.y - pos.y) < self.k_radius * height:
+            if np.abs(cursor.x - pos.x) < self.K_RADIUS * width and np.abs(cursor.y - pos.y) < self.K_RADIUS * height:
                 return self.cursors.index(cursor)
         return None
 
@@ -186,9 +192,9 @@ class IvcCursors:
         """
 
         for cursor in self.cursors:
-            cursor.paint(self.last_color)
+            cursor.paint(self.color_for_rest)
         self.cursors.append(IvcCursor(pos, self.plot, self.font))
-        self.cursors[-1].paint(self.current_color)
+        self.cursors[-1].paint(self.color_for_selected)
         self.cursors[-1].attach(self.plot)
         self.current_index = len(self.cursors) - 1
 
@@ -257,9 +263,9 @@ class IvcCursors:
 
     def paint_current_cursor(self):
         for cursor in self.cursors:
-            cursor.paint(self.last_color)
+            cursor.paint(self.color_for_rest)
         if self.current_index is not None:
-            self.cursors[self.current_index].paint(self.current_color)
+            self.cursors[self.current_index].paint(self.color_for_selected)
 
     def remove_all_cursors(self):
         """
@@ -293,24 +299,26 @@ class IvcCursors:
 
 class IvcViewer(QwtPlot):
 
-    curves: List[PlotCurve] = []
     min_border_current: float = 0.5
     min_border_voltage: float = 1.0
     min_borders_changed: pyqtSignal = pyqtSignal()
 
     def __init__(self, owner, parent=None, solid_axis_enabled: bool = True,
                  grid_color: QColor = QColor(0, 0, 0), back_color: QColor = QColor(0xe1, 0xed, 0xeb),
-                 text_color: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True,
+                 text_color: QColor = QColor(255, 0, 0), color_for_rest_markers: QColor = QColor(102, 255, 0),
+                 color_for_selected_marker: QColor = QColor(255, 0, 0), axis_sign_enabled: bool = True,
                  axis_font: QFont = DEFAULT_AXIS_FONT, marker_font: QFont = DEFAULT_MARKER_FONT,
                  title_font: QFont = DEFAULT_TITLE_FONT,
                  screenshot_file_name_base: str = DEFAULT_SCREENSHOT_FILE_NAME_BASE):
         """
-        :param owner:
-        :param parent:
+        :param owner: owner widget;
+        :param parent: parent widget;
         :param solid_axis_enabled: if True then axes will be shown with solid lines;
         :param grid_color: grid color;
         :param back_color: canvas background color;
         :param text_color: color of text at center of plot;
+        :param color_for_rest_markers: color for unselected cursors;
+        :param color_for_selected_marker: color for selected cursor.
         :param axis_sign_enabled: if True then labels of axes will be displayed;
         :param axis_font: font for values on axes;
         :param marker_font: font of text at markers;
@@ -371,7 +379,9 @@ class IvcViewer(QwtPlot):
         self.setAxisScale(QwtPlot.yLeft, -self.__min_border_current, self.__min_border_current)
         self._current_scale: float = 0.4
         self._voltage_scale: float = 1.5
-        self.cursors: IvcCursors = IvcCursors(self, marker_font)
+        self.cursors: IvcCursors = IvcCursors(self, marker_font, color_for_rest=color_for_rest_markers,
+                                              color_for_selected=color_for_selected_marker)
+        self.curves: List[PlotCurve] = []
         self._start_pos = None
         self._center_text: QwtText = None
         self._center_text_marker: QwtPlotMarker = None

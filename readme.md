@@ -1,22 +1,52 @@
 # Модуль для просмотра ВАХ
 
-PyQt-виджет для отображения ВАХ. Предназначен в первую очередь для встраивания в разные продукты линейки EyePoint.
+PyQt-виджет для отображения ВАХ. Предназначен в первую очередь для встраивания в разные продукты линейки EyePoint. Виджет должен уметь выводить несколько ВАХ на график и при необходимости обновлять их.
 
-Виджет должен уметь выводить несколько ВАХ на график и при необходимости обновлять их.
+## Запуск в Windows
 
+1. Установите зависимости:
 
-Установка зависимостей:
-```bash
-python -m pip install -r requirements.txt
-```
-Запуск:
-```bash
-python -m ivviewer
-```
+   ```bash
+   python -m venv venv
+   venv\Scripts\python -m pip install --upgrade pip
+   venv\Scripts\python -m pip install -r requirements.txt
+   ```
 
-Запуск тестов:
-```bash
-testall.bat
-```
+2. Запустите пример:
 
-Выполнять в директории с проектом (репозиторием). Тестировалось на Python версии 3.6. Желательно работать в виртуальной среде. Qt5, Qwt должен быть установлен в системе.
+   ```bash
+   venv\Scripts\python -m ivviewer
+   ```
+
+3. Запустите тест:
+
+   ```bash
+   testall.bat
+   ```
+
+## Запуск в Linux
+
+1. Установите зависимости:
+
+   ```bash
+   python3 -m venv venv
+   venv/bin/python3 -m pip install --upgrade pip
+   venv/bin/python3 -m pip install -r requirements.txt
+   ```
+
+2. Запустите пример:
+
+   ```bash
+   venv/bin/python3 -m ivviewer
+   ```
+
+3. Запустите тест:
+
+   ```bash
+   bash testall.sh
+   ```
+
+## Примечания
+
+- Модуль тестировался на Python версии 3.6.
+- В системе должны быть установлены Qt5, Qwt.
