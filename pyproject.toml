@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ivviewer"
+version = "0.1.7"
+authors = [
+  { name="EPC MSU", email="info@physlab.ru" },
+]
+description = "A configurable Qt widget that displays I-V curves."
+readme = "README-pypi.md"
+license = { file="LICENSE" }
+requires-python = "==3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "dataclasses==0.8",
+    "numpy==1.18.1",
+    "PyQt5==5.15.0",
+    "PyQt5-sip==12.8.1",
+    "PythonQwt==0.8.3"
+]
+
+[project.urls]
+#"Homepage" = "https://hg.ximc.ru/eyepoint/ivviewer"
