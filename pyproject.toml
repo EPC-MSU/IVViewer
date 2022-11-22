@@ -26,4 +26,4 @@ dependencies = [
 ]
 
 [project.urls]
-#"Homepage" = "https://hg.ximc.ru/eyepoint/ivviewer"
+#"Homepage" = "https://gitlab.ximc.ru/eyepoint/ivviewer"
