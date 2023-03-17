@@ -392,7 +392,8 @@ class IvcViewer(QwtPlot):
     def __init__(self, owner, parent=None, solid_axis_enabled: bool = True, grid_color: QColor = None,
                  back_color: QColor = None, text_color: QColor = None, color_for_rest_cursors: QColor = None,
                  color_for_selected_cursor: QColor = None, axis_label_enabled: bool = True,
-                 axis_font: QFont = None, cursor_font: QFont = None, title_font: QFont = None):
+                 axis_font: QFont = None, cursor_font: QFont = None, title_font: QFont = None, accuracy: int = None
+                 ) -> None:
         """
         :param owner: owner widget;
         :param parent: parent widget;
@@ -405,7 +406,8 @@ class IvcViewer(QwtPlot):
         :param axis_label_enabled: if True then labels of axes will be displayed;
         :param axis_font: font for values on axes;
         :param cursor_font: font of text at cursors;
-        :param title_font: axis titles font.
+        :param title_font: axis titles font;
+        :param accuracy: the accuracy with which you want to display coordinate values on cursors.
         """
 
         super().__init__(parent)
@@ -464,7 +466,7 @@ class IvcViewer(QwtPlot):
         self._x_scale: float = 1.5
         self._y_scale: float = 0.4
         self.cursors: IvcCursors = IvcCursors(self, cursor_font, color_for_rest=color_for_rest_cursors,
-                                              color_for_selected=color_for_selected_cursor)
+                                              color_for_selected=color_for_selected_cursor, accuracy=accuracy)
         self.curves: List[PlotCurve] = []
         self._center_text: QwtText = None
         self._center_text_marker: QwtPlotMarker = None
@@ -519,12 +521,8 @@ class IvcViewer(QwtPlot):
         self.setAxisTitle(QwtPlot.yLeft, y_axis_title)
 
     def _transform_point_coordinates(self, pos: QPoint) -> Point:
-        pos_x = pos.x()
-        if self.axisEnabled(QwtPlot.yLeft):
-            pos_x -= self.axisWidget(QwtPlot.yLeft).width()
-        pos_y = pos.y()
-        if self.axisEnabled(QwtPlot.xTop):
-            pos_y -= self.axisWidget(QwtPlot.xTop).height()
+        pos_x = pos.x() - self.canvas().x()
+        pos_y = pos.y() - self.canvas().y()
         x = np.round(self.invTransform(QwtPlot.xBottom, pos_x), 2)
         y = np.round(self.invTransform(QwtPlot.yLeft, pos_y), 2)
         return Point(x, y)
@@ -779,10 +777,10 @@ class IvcViewer(QwtPlot):
         self._remove_cursor_mode = state
 
     @pyqtSlot(QPoint)
-    def show_context_menu(self, position: QPoint) -> None:
+    def show_context_menu(self, pos: QPoint) -> None:
         """
         Slot shows context menu.
-        :param position: position of the context menu event that the widget receives.
+        :param pos: position of the context menu event that the widget receives.
         """
 
         if self._center_text_marker:
@@ -794,14 +792,12 @@ class IvcViewer(QwtPlot):
         action_save_image.triggered.connect(self.save_image)
         menu.addAction(action_save_image)
         if self._context_menu_works_with_cursors:
-            pos_for_cursor = position - QPoint(self.canvas().x(), 0)
             action_add_cursor = QAction(QIcon(os.path.join(media_dir, "add_cursor.png")),
                                         self._get_item_label("add_cursor"), menu)
-            action_add_cursor.triggered.connect(partial(self.add_cursor, pos_for_cursor))
+            action_add_cursor.triggered.connect(partial(self.add_cursor, pos))
             menu.addAction(action_add_cursor)
             if not self.cursors.is_empty():
-                pos = self._transform_point_coordinates(pos_for_cursor)
-                if self.cursors.find_cursor_for_context_menu(pos):
+                if self.cursors.find_cursor_for_context_menu(self._transform_point_coordinates(pos)):
                     action_remove_cursor = QAction(QIcon(os.path.join(media_dir, "remove_cursor.png")),
                                                    self._get_item_label("remove_cursor"), menu)
                     action_remove_cursor.triggered.connect(self.remove_cursor)
@@ -810,7 +806,7 @@ class IvcViewer(QwtPlot):
                                                     self._get_item_label("remove_all_cursors"), menu)
                 action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
                 menu.addAction(action_remove_all_cursors)
-        menu.popup(self.mapToGlobal(position))
+        menu.popup(self.mapToGlobal(pos))
 
     def show_rect_axes(self) -> None:
         """

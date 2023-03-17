@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QApplication
 from ivviewer import Curve, Viewer
 
 
-class IVViewerTest(unittest.TestCase):
+class TestCurves(unittest.TestCase):
 
     def test_1_two_curves(self):
         """
@@ -31,7 +31,7 @@ class IVViewerTest(unittest.TestCase):
 
         window.show()
         app.exec()
-        self.assertTrue(True)
+        self.assertTrue(len(window.plot.curves) == 2)
 
     def test_2_two_curves_with_color_setup(self):
         """
@@ -41,18 +41,19 @@ class IVViewerTest(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(600, 600)
+        window.plot.set_scale(14.0, 28.0)
 
         x_test = [-2.5, 0, 2.5]
-        y_test = [0.005, 0, 0.005]
+        y_test = [-0.005, 0, 0.005]
         test_curve = window.plot.add_curve()
         test_curve.set_curve(Curve(x_test, y_test))
-        test_curve.set_curve_param(QColor(255, 0, 255, 400))
+        test_curve.set_curve_param(QColor(255, 0, 255))
 
         x_ref = [-2.5, 0, 2.5]
         y_ref = [-0.003, 0, 0.003]
         reference_curve = window.plot.add_curve()
         reference_curve.set_curve(Curve(x_ref, y_ref))
-        reference_curve.set_curve_param(QColor(0, 255, 255, 200))
+        reference_curve.set_curve_param()
 
         window.show()
         app.exec()
