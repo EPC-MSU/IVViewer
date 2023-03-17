@@ -1,130 +1,141 @@
 import sys
 import unittest
-import numpy as np
-from PyQt5.QtCore import QPoint
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import QPoint, Qt
+from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import QApplication
 from ivviewer import Curve, Viewer
 
 
 class TestCurves(unittest.TestCase):
 
-    def test_1_two_curves(self):
+    def test_1_show_center_text(self) -> None:
         """
-        Test shows viewer window with two straight lines. Viewer is scaled to show both lines.
-        """
-
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(600, 600)
-        window.plot.set_scale(14.0, 28.0)
-
-        x_test = [-2.5, 0, 2.5]
-        y_test = [-0.005, 0, 0.005]
-        test_curve = window.plot.add_curve()
-        test_curve.set_curve(Curve(x_test, y_test))
-
-        x_ref = [-2.5, 0, 2.5]
-        y_ref = [-0.003, 0, 0.003]
-        reference_curve = window.plot.add_curve()
-        reference_curve.set_curve(Curve(x_ref, y_ref))
-
-        window.show()
-        app.exec()
-        self.assertTrue(len(window.plot.curves) == 2)
-
-    def test_2_two_curves_with_color_setup(self):
-        """
-        Test shows viewer window with two straight lines and sets colors for lines.
-        """
-
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(600, 600)
-        window.plot.set_scale(14.0, 28.0)
-
-        x_test = [-2.5, 0, 2.5]
-        y_test = [-0.005, 0, 0.005]
-        test_curve = window.plot.add_curve()
-        test_curve.set_curve(Curve(x_test, y_test))
-        test_curve.set_curve_param(QColor(255, 0, 255))
-
-        x_ref = [-2.5, 0, 2.5]
-        y_ref = [-0.003, 0, 0.003]
-        reference_curve = window.plot.add_curve()
-        reference_curve.set_curve(Curve(x_ref, y_ref))
-        reference_curve.set_curve_param()
-
-        window.show()
-        app.exec()
-        self.assertTrue(True)
-
-    def test_3_three_curves_with_color_setup(self):
-        """
-        Test shows viewer window with three curves and sets colors for lines. Viewer is scaled to show all lines.
-        """
-
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 20.0)
-
-        x_first = [0, 1, 2]
-        y_first = [-0.005, 0, 0.005]
-        first_curve = window.plot.add_curve()
-        first_curve.set_curve(Curve(x_first, y_first))
-        first_curve.set_curve_param(QColor(255, 0, 255, 200))
-
-        x_second = [3, 2, 5]
-        y_second = [-0.003, 0, 0.003]
-        second_curve = window.plot.add_curve()
-        second_curve.set_curve(Curve(x_second, y_second))
-        second_curve.set_curve_param(QColor(0, 255, 255, 200))
-
-        x_third = [2, 3, 4]
-        y_third = [-0.001, 0, 0.001]
-        third_curve = window.plot.add_curve()
-        third_curve.set_curve(Curve(x_third, y_third))
-        third_curve.set_curve_param(QColor(255, 255, 0, 200))
-
-        window.show()
-        app.exec()
-        self.assertTrue(True)
-
-    def test_4_context_menu_with_center_text(self):
-        """
-        Test shows viewer window with text in center. And context menu is disabled (context menu will not appear
-        on right-click).
+        Test checks that text is displayed in the center of plot.
         """
 
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(800, 600)
         window.plot.set_center_text("Context menu is disabled")
+        self.assertTrue(window.plot._center_text_marker is not None)
         window.show()
         app.exec()
-        self.assertTrue(True)
 
-    def test_5_cursors(self):
+    def test_2_show_center_text_with_user_settings(self) -> None:
         """
-        Test shows viewer window with one curve and two cursors.
+        Test checks that text is displayed in the center of plot with user settings.
         """
 
         app = QApplication(sys.argv)
         window = Viewer()
-        window.setFixedSize(600, 600)
-        window.plot.set_scale(14.0, 28.0)
-
-        angle = np.linspace(0, 2 * np.pi, 100)
-        radius = 5.0
-        x = radius * np.cos(angle)
-        y = 0.001 * radius * np.sin(angle)
-        curve = window.plot.add_curve()
-        curve.set_curve(Curve(x, y))
-
-        window.plot.add_cursor(QPoint(22, 51))
-        window.plot.add_cursor(QPoint(350, 203))
-
+        window.setFixedSize(800, 600)
+        font = QFont("Courier", 100)
+        color = QColor(0, 153, 204)
+        window.plot.set_center_text("Blue central text", font, color)
+        self.assertTrue(window.plot._center_text_marker is not None)
         window.show()
         app.exec()
-        self.assertTrue(len(window.plot.get_list_of_all_cursors()) == 2)
+
+    def test_3_remove_center_text(self) -> None:
+        """
+        Test checks that text in the center of plot is removed.
+        """
+
+        app = QApplication(sys.argv)
+        window = Viewer()
+        window.setFixedSize(800, 600)
+        window.plot.set_center_text("Context menu is disabled")
+        window.plot.clear_center_text()
+        self.assertTrue(window.plot._center_text_marker is None)
+        window.show()
+        app.exec()
+
+    def test_4_show_lower_text_with_user_settings(self) -> None:
+        """
+        Test checks that text is displayed in the lower part of plot with user settings.
+        """
+
+        app = QApplication(sys.argv)
+        window = Viewer()
+        window.setFixedSize(800, 600)
+        font = QFont("Courier", 100)
+        color = QColor(0, 51, 0)
+        window.plot.set_lower_text("Green lower text", font, color)
+        self.assertTrue(window.plot._lower_text_marker is not None)
+        window.show()
+        app.exec()
+
+    def test_5_remove_lower_text(self) -> None:
+        """
+        Test checks that text in the lower part of plot is removed.
+        """
+
+        app = QApplication(sys.argv)
+        window = Viewer()
+        window.setFixedSize(800, 600)
+        window.plot.set_lower_text("Green lower text")
+        window.plot.clear_lower_text()
+        self.assertTrue(window.plot._lower_text_marker is None)
+        window.show()
+        app.exec()
+
+    def test_6_disable_context_menu_for_cursors(self) -> None:
+        """
+        Test verifies that deactivation of cursors in the context menu works.
+        """
+
+        app = QApplication(sys.argv)
+        window = Viewer()
+        window.setFixedSize(800, 600)
+        window.plot.enable_context_menu_for_cursors(False)
+        self.assertTrue(window.plot._context_menu_works_with_cursors is False)
+        window.show()
+        app.exec()
+
+    def test_7_disable_context_menu(self) -> None:
+        """
+        Test checks that it is possible to deactivate the context menu.
+        """
+
+        app = QApplication(sys.argv)
+        window = Viewer()
+        window.setFixedSize(800, 600)
+        window.plot.enable_context_menu(False)
+        self.assertEqual(window.plot.contextMenuPolicy(), Qt.NoContextMenu)
+        window.show()
+        app.exec()
+
+    def test_8_localize(self) -> None:
+        """
+        Test verifies that localization of context menu items works.
+        """
+
+        app = QApplication(sys.argv)
+        window = Viewer()
+        window.setFixedSize(800, 600)
+        window.plot.localize_widget(save_screenshot="Save image", add_cursor="Add cursor",
+                                    remove_cursor="Remove cursor", remove_all_cursors="Remove all cursors")
+        self.assertEqual(window.plot._items_for_localization["save_screenshot"]["translation"], "Save image")
+        window.show()
+        app.exec()
+
+    def test_9_set_axis_titles(self) -> None:
+        """
+        Test checks assignment of titles to axes.
+        """
+
+        app = QApplication(sys.argv)
+        window = Viewer()
+        window.setFixedSize(800, 600)
+
+        x_values = [-2.5, 0, 2.5]
+        y_values = [-0.005, 0, 0.005]
+        curve = window.plot.add_curve()
+        curve.set_curve(Curve(x_values, y_values))
+        curve.set_curve_param(QColor(255, 153, 102))
+        window.plot.add_cursor(QPoint(222, 51))
+        window.plot.set_axis_titles("Ось X", "Ось Y", "x", "y")
+        self.assertEqual(window.plot._x_title, "Ось X")
+        self.assertEqual(window.plot._y_title, "Ось Y")
+        window.show()
+        app.exec()

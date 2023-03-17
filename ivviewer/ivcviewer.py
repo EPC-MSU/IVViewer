@@ -459,12 +459,11 @@ class IvcViewer(QwtPlot):
         self.enableAxis(QwtPlot.yLeft, axis_label_enabled)
 
         # Initial setup for axis scales
-        self.__min_border_x: float = abs(float(IvcViewer.MIN_BORDER_X))
-        self.__min_border_y: float = abs(float(IvcViewer.MIN_BORDER_Y))
-        self.setAxisScale(QwtPlot.xBottom, -self.__min_border_x, self.__min_border_x)
-        self.setAxisScale(QwtPlot.yLeft, -self.__min_border_y, self.__min_border_y)
-        self._x_scale: float = 1.5
-        self._y_scale: float = 0.4
+        self._min_border_x: float = abs(float(IvcViewer.MIN_BORDER_X))
+        self._min_border_y: float = abs(float(IvcViewer.MIN_BORDER_Y))
+        self._x_scale: float = None
+        self._y_scale: float = None
+
         self.cursors: IvcCursors = IvcCursors(self, cursor_font, color_for_rest=color_for_rest_cursors,
                                               color_for_selected=color_for_selected_cursor, accuracy=accuracy)
         self.curves: List[PlotCurve] = []
@@ -487,16 +486,19 @@ class IvcViewer(QwtPlot):
             "remove_cursor": {"default": "Удалить метку"},
             "remove_all_cursors": {"default": "Удалить все метки"}
         }
+        self.__adjust_scale()
 
     def __adjust_scale(self) -> None:
-        self.setAxisScale(QwtPlot.xBottom, -self._x_scale, self._x_scale)
-        self.setAxisScale(QwtPlot.yLeft, -self._y_scale, self._y_scale)
-        self.__update_align_lower_text()
+        x_scale = self._get_scale(self._x_scale, self._min_border_x)
+        y_scale = self._get_scale(self._y_scale, self._min_border_y)
+        self.setAxisScale(QwtPlot.xBottom, -x_scale, x_scale)
+        self.setAxisScale(QwtPlot.yLeft, -y_scale, y_scale)
+        self.__update_align_lower_text(x_scale, y_scale)
 
-    def __update_align_lower_text(self) -> None:
+    def __update_align_lower_text(self, x_scale: float, y_scale: float) -> None:
         if not self._lower_text:
             return
-        self._lower_text_marker.setValue(-self._x_scale, -self._y_scale)
+        self._lower_text_marker.setValue(-x_scale, -y_scale)
 
     def _get_default_screenshot_path(self) -> str:
         file_name = self._screenshot_file_name_base + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"
@@ -563,9 +565,15 @@ class IvcViewer(QwtPlot):
             self._lower_text_marker = None
             self._lower_text = None
 
+    @staticmethod
+    def _get_scale(scale: float, min_border: float) -> float:
+        if isinstance(scale, (float, int)) and scale > min_border:
+            return scale
+        return min_border
+
     def clear_min_borders(self) -> None:
-        self.__min_border_x = abs(float(IvcViewer.MIN_BORDER_X))
-        self.__min_border_y = abs(float(IvcViewer.MIN_BORDER_Y))
+        self._min_border_x = abs(float(IvcViewer.MIN_BORDER_X))
+        self._min_border_y = abs(float(IvcViewer.MIN_BORDER_Y))
         self.__adjust_scale()
         self.min_borders_changed.emit()
 
@@ -600,7 +608,7 @@ class IvcViewer(QwtPlot):
         return self.cursors.cursors
 
     def get_min_borders(self) -> Tuple[float, float]:
-        return self.__min_border_x, self.__min_border_y
+        return self._min_border_x, self._min_border_y
 
     def get_minor_axis_step(self) -> Tuple[float, float]:
         """
@@ -744,15 +752,15 @@ class IvcViewer(QwtPlot):
         self._lower_text.setColor(color if isinstance(color, QColor) else self._grid_color)
         self._lower_text.setRenderFlags(Qt.AlignLeft)
         self._lower_text_marker = QwtPlotMarker()
-        self._lower_text_marker.setValue(-self._x_scale, -self._y_scale)
         self._lower_text_marker.setSpacing(10)
         self._lower_text_marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         self._lower_text_marker.setLabel(self._lower_text)
         self._lower_text_marker.attach(self)
+        self.__adjust_scale()
 
     def set_min_borders(self, min_x: float, min_y: float) -> None:
-        self.__min_border_x = abs(float(min_x))
-        self.__min_border_y = abs(float(min_y))
+        self._min_border_x = abs(float(min_x))
+        self._min_border_y = abs(float(min_y))
         self.__adjust_scale()
         self.min_borders_changed.emit()
 
