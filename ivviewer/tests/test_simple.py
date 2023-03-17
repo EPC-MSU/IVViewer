@@ -47,13 +47,13 @@ class IVViewerTest(unittest.TestCase):
         y_test = [0.005, 0, 0.005]
         test_curve = window.plot.add_curve()
         test_curve.set_curve(Curve(x_test, y_test))
-        test_curve.set_curve_params(color=QColor(255, 0, 255, 400))
+        test_curve.set_curve_param(color=QColor(255, 0, 255, 400))
 
         x_ref = [-2.5, 0, 2.5]
         y_ref = [-0.003, 0, 0.003]
         reference_curve = window.plot.add_curve()
         reference_curve.set_curve(Curve(x_ref, y_ref))
-        reference_curve.set_curve_params(color=QColor(0, 255, 255, 200))
+        reference_curve.set_curve_param(color=QColor(0, 255, 255, 200))
 
         window.show()
         app.exec()
@@ -74,19 +74,19 @@ class IVViewerTest(unittest.TestCase):
         y_first = [-0.005, 0, 0.005]
         first_curve = window.plot.add_curve()
         first_curve.set_curve(Curve(x_first, y_first))
-        first_curve.set_curve_params(color=QColor(255, 0, 255, 200))
+        first_curve.set_curve_param(color=QColor(255, 0, 255, 200))
 
         x_second = [3, 2, 5]
         y_second = [-0.003, 0, 0.003]
         second_curve = window.plot.add_curve()
         second_curve.set_curve(Curve(x_second, y_second))
-        second_curve.set_curve_params(color=QColor(0, 255, 255, 200))
+        second_curve.set_curve_param(color=QColor(0, 255, 255, 200))
 
         x_third = [2, 3, 4]
         y_third = [-0.001, 0, 0.001]
         third_curve = window.plot.add_curve()
         third_curve.set_curve(Curve(x_third, y_third))
-        third_curve.set_curve_params(color=QColor(255, 255, 0, 200))
+        third_curve.set_curve_param(color=QColor(255, 255, 0, 200))
 
         window.show()
         app.exec()

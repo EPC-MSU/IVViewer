@@ -7,16 +7,14 @@ import numpy as np
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import QApplication
-from .ivcviewer import Curve
-from .window import Viewer
+from ivviewer.ivcviewer import Curve
+from ivviewer.window import Viewer
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = Viewer(axis_font=QFont("Lucida Console", 10), marker_font=QFont("Times", 15),
+    window = Viewer(axis_font=QFont("Lucida Console", 10), cursor_font=QFont("Times", 15),
                     title_font=QFont("Monaco", 30))
-    window.plot.set_x_axis_title("Напряжение, В")
-    window.plot.set_y_axis_title("Ток, мА")
     window.plot.set_scale(6.0, 15.0)
 
     # Add three curves
@@ -24,13 +22,13 @@ if __name__ == "__main__":
     y_test = [-0.005, 0, 0.005]
     test_curve = window.plot.add_curve()
     test_curve.set_curve(Curve(x_test, y_test))
-    test_curve.set_curve_params(QColor("red"))
+    test_curve.set_curve_param(QColor("red"))
 
     x_ref = [-2.5, 0, 2.5]
     y_ref = [-0.003, 0, 0.0033]
     reference_curve = window.plot.add_curve()
     reference_curve.set_curve(Curve(x_ref, y_ref))
-    reference_curve.set_curve_params(QColor("green"))
+    reference_curve.set_curve_param(QColor("green"))
 
     angle = np.linspace(0, 2 * np.pi, 100)
     radius = 1.0
@@ -38,7 +36,7 @@ if __name__ == "__main__":
     y_third = 0.001 * radius * np.sin(angle)
     third_curve = window.plot.add_curve()
     third_curve.set_curve(Curve(x_third, y_third))
-    third_curve.set_curve_params(QColor("blue"))
+    third_curve.set_curve_param(QColor("blue"))
 
     # Add cursors
     window.plot.add_cursor(QPoint(22, 51))
