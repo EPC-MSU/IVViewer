@@ -11,8 +11,7 @@ class IVViewerTest(unittest.TestCase):
 
     def test_1_two_curves(self):
         """
-        Test shows viewer window with two straight lines. Viewer is scaled
-        to show both lines.
+        Test shows viewer window with two straight lines. Viewer is scaled to show both lines.
         """
 
         app = QApplication(sys.argv)
@@ -47,13 +46,13 @@ class IVViewerTest(unittest.TestCase):
         y_test = [0.005, 0, 0.005]
         test_curve = window.plot.add_curve()
         test_curve.set_curve(Curve(x_test, y_test))
-        test_curve.set_curve_param(color=QColor(255, 0, 255, 400))
+        test_curve.set_curve_param(QColor(255, 0, 255, 400))
 
         x_ref = [-2.5, 0, 2.5]
         y_ref = [-0.003, 0, 0.003]
         reference_curve = window.plot.add_curve()
         reference_curve.set_curve(Curve(x_ref, y_ref))
-        reference_curve.set_curve_param(color=QColor(0, 255, 255, 200))
+        reference_curve.set_curve_param(QColor(0, 255, 255, 200))
 
         window.show()
         app.exec()
@@ -61,8 +60,7 @@ class IVViewerTest(unittest.TestCase):
 
     def test_3_three_curves_with_color_setup(self):
         """
-        Test shows viewer window with three curves and sets colors for lines.
-        Viewer is scaled to show all lines.
+        Test shows viewer window with three curves and sets colors for lines. Viewer is scaled to show all lines.
         """
 
         app = QApplication(sys.argv)
@@ -74,19 +72,19 @@ class IVViewerTest(unittest.TestCase):
         y_first = [-0.005, 0, 0.005]
         first_curve = window.plot.add_curve()
         first_curve.set_curve(Curve(x_first, y_first))
-        first_curve.set_curve_param(color=QColor(255, 0, 255, 200))
+        first_curve.set_curve_param(QColor(255, 0, 255, 200))
 
         x_second = [3, 2, 5]
         y_second = [-0.003, 0, 0.003]
         second_curve = window.plot.add_curve()
         second_curve.set_curve(Curve(x_second, y_second))
-        second_curve.set_curve_param(color=QColor(0, 255, 255, 200))
+        second_curve.set_curve_param(QColor(0, 255, 255, 200))
 
         x_third = [2, 3, 4]
         y_third = [-0.001, 0, 0.001]
         third_curve = window.plot.add_curve()
         third_curve.set_curve(Curve(x_third, y_third))
-        third_curve.set_curve_param(color=QColor(255, 255, 0, 200))
+        third_curve.set_curve_param(QColor(255, 255, 0, 200))
 
         window.show()
         app.exec()
@@ -94,8 +92,8 @@ class IVViewerTest(unittest.TestCase):
 
     def test_4_context_menu_with_center_text(self):
         """
-        Test shows viewer window with text in center. And context menu is disabled
-        (context menu will not appear on right-click).
+        Test shows viewer window with text in center. And context menu is disabled (context menu will not appear
+        on right-click).
         """
 
         app = QApplication(sys.argv)
@@ -106,9 +104,9 @@ class IVViewerTest(unittest.TestCase):
         app.exec()
         self.assertTrue(True)
 
-    def test_5_markers(self):
+    def test_5_cursors(self):
         """
-        Test shows viewer window with one curve and two markers.
+        Test shows viewer window with one curve and two cursors.
         """
 
         app = QApplication(sys.argv)
