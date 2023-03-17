@@ -39,7 +39,7 @@ if __name__ == "__main__":
     third_curve.set_curve_param(QColor("blue"))
 
     # Add cursors
-    window.plot.add_cursor(QPoint(22, 51))
+    window.plot.add_cursor(QPoint(130, 51))
     window.plot.add_cursor(QPoint(350, 203))
 
     # Set text in center of viewer

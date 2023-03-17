@@ -163,12 +163,12 @@ class IvcCursor:
         Method calculates sizes and position of white cross of marker.
         """
 
-        x = self._plot.canvasMap(QwtPlot.xBottom).transform(self.x)
-        x_1 = self._plot.canvasMap(QwtPlot.xBottom).invTransform(x - self.CROSS_SIZE)
-        x_2 = self._plot.canvasMap(QwtPlot.xBottom).invTransform(x + self.CROSS_SIZE)
-        y = self._plot.canvasMap(QwtPlot.yLeft).transform(self.y)
-        y_1 = self._plot.canvasMap(QwtPlot.yLeft).invTransform(y - self.CROSS_SIZE)
-        y_2 = self._plot.canvasMap(QwtPlot.yLeft).invTransform(y + self.CROSS_SIZE)
+        x = self._plot.transform(QwtPlot.xBottom, self.x)
+        x_1 = self._plot.invTransform(QwtPlot.xBottom, x - self.CROSS_SIZE)
+        x_2 = self._plot.invTransform(QwtPlot.xBottom, x + self.CROSS_SIZE)
+        y = self._plot.transform(QwtPlot.yLeft, self.y)
+        y_1 = self._plot.invTransform(QwtPlot.yLeft, y - self.CROSS_SIZE)
+        y_2 = self._plot.invTransform(QwtPlot.yLeft, y + self.CROSS_SIZE)
         self._cross_x.setData((x_1, x_2), (self.y, self.y))
         self._cross_y.setData((self.x, self.x), (y_1, y_2))
 
@@ -452,9 +452,9 @@ class IvcViewer(QwtPlot):
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
 
-        self.enableAxis(QwtPlot.xBottom, not axis_label_enabled)
-        self.enableAxis(QwtPlot.yLeft, not axis_label_enabled)
         self._set_axis_titles()
+        self.enableAxis(QwtPlot.xBottom, axis_label_enabled)
+        self.enableAxis(QwtPlot.yLeft, axis_label_enabled)
 
         # Initial setup for axis scales
         self.__min_border_x: float = abs(float(IvcViewer.MIN_BORDER_X))
@@ -518,9 +518,15 @@ class IvcViewer(QwtPlot):
         y_axis_title.setFont(self._title_font)
         self.setAxisTitle(QwtPlot.yLeft, y_axis_title)
 
-    def _transform_point_coordinates(self, position: QPoint) -> Point:
-        x = np.round(self.canvasMap(2).invTransform(position.x()), 2)
-        y = np.round(self.canvasMap(0).invTransform(position.y()), 2)
+    def _transform_point_coordinates(self, pos: QPoint) -> Point:
+        pos_x = pos.x()
+        if self.axisEnabled(QwtPlot.yLeft):
+            pos_x -= self.axisWidget(QwtPlot.yLeft).width()
+        pos_y = pos.y()
+        if self.axisEnabled(QwtPlot.xTop):
+            pos_y -= self.axisWidget(QwtPlot.xTop).height()
+        x = np.round(self.invTransform(QwtPlot.xBottom, pos_x), 2)
+        y = np.round(self.invTransform(QwtPlot.yLeft, pos_y), 2)
         return Point(x, y)
 
     @pyqtSlot(QPoint)
