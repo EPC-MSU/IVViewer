@@ -1,10 +1,9 @@
 import sys
 import unittest
-import numpy as np
 from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication
-from ivviewer import Curve, Viewer
+from ivviewer import Viewer
 from ivviewer.ivcviewer import Point
 
 
@@ -25,14 +24,6 @@ class MouseEvent:
 
 class TestCurves(unittest.TestCase):
 
-    @staticmethod
-    def _prepare_curve() -> Curve:
-        angle = np.linspace(0, 2 * np.pi, 100)
-        radius = 5.0
-        x = radius * np.cos(angle)
-        y = 0.001 * radius * np.sin(angle)
-        return Curve(x, y)
-
     def test_1_add_cursor(self) -> None:
         """
         Test checks for adding a cursor. Test shows viewer window with one curve and two cursors.
@@ -41,16 +32,11 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 10.0)
-
-        curve = window.plot.add_curve()
-        curve.set_curve(self._prepare_curve())
-
         window.plot.add_cursor(QPoint(222, 51))
         window.plot.add_cursor(QPoint(450, 303))
+        window.setToolTip("Должно быть две метки. Активная метка (красная) - та, что правее и ниже")
         self.assertEqual(len(window.plot.get_list_of_all_cursors()), 2)
         self.assertEqual(window.plot.cursors._current_index, 1)
-
         window.show()
         app.exec()
 
@@ -62,17 +48,12 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 10.0)
-
-        curve = window.plot.add_curve()
-        curve.set_curve(self._prepare_curve())
-
         window.plot.add_cursor(QPoint(222, 51))
         window.plot.add_cursor(QPoint(450, 303))
         window.plot.remove_cursor()
+        window.setToolTip("Должна быть одна неактивная метка (зеленая)")
         self.assertEqual(len(window.plot.get_list_of_all_cursors()), 1)
         self.assertTrue(window.plot.cursors._current_index is None)
-
         window.show()
         app.exec()
 
@@ -84,17 +65,12 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 10.0)
-
-        curve = window.plot.add_curve()
-        curve.set_curve(self._prepare_curve())
-
         window.plot.add_cursor(QPoint(222, 51))
         window.plot.add_cursor(QPoint(450, 303))
         window.plot.remove_all_cursors()
+        window.setToolTip("Не должно быть ни одной метки")
         self.assertEqual(len(window.plot.get_list_of_all_cursors()), 0)
         self.assertTrue(window.plot.cursors._current_index is None)
-
         window.show()
         app.exec()
 
@@ -107,18 +83,13 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 10.0)
-
-        curve = window.plot.add_curve()
-        curve.set_curve(self._prepare_curve())
-
         pos = QPoint(222, 51)
         window.plot.add_cursor(pos)
         window.plot.add_cursor(QPoint(450, 303))
         event = MouseEvent(pos)
         window.plot.mousePressEvent(event)
+        window.setToolTip("Должно быть две метки. Активная метка (красная) - та, что левее и выше")
         self.assertEqual(window.plot.cursors._current_index, 0)
-
         window.show()
         app.exec()
 
@@ -131,17 +102,12 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 10.0)
-
-        curve = window.plot.add_curve()
-        curve.set_curve(self._prepare_curve())
-
         window.plot.add_cursor(QPoint(222, 51))
         window.plot.add_cursor(QPoint(450, 303))
         event = MouseEvent(QPoint(300, 400))
         window.plot.mousePressEvent(event)
+        window.setToolTip("Должно быть две неактивные метки (зеленые)")
         self.assertTrue(window.plot.cursors._current_index is None)
-
         window.show()
         app.exec()
 
@@ -153,22 +119,17 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 10.0)
-
-        curve = window.plot.add_curve()
-        curve.set_curve(self._prepare_curve())
-
         window.plot.add_cursor(QPoint(222, 51))
         window.plot.add_cursor(QPoint(450, 303))
-        x_to_move = -1
-        y_to_move = -1
+        x_to_move = 0.5
+        y_to_move = -0.2
         window.plot.cursors.move_cursor(Point(x_to_move, y_to_move))
-
         current_index = window.plot.cursors._current_index
         current_cursor = window.plot.get_list_of_all_cursors()[current_index]
+        window.setToolTip(f"Должно быть две метки. Активная метка (красная) должна находиться в точке ({x_to_move}, "
+                          f"{y_to_move})")
         self.assertEqual(current_cursor.x, x_to_move)
         self.assertEqual(current_cursor.y, y_to_move)
-
         window.show()
         app.exec()
 
@@ -180,16 +141,11 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer(color_for_rest_cursors=QColor(153, 0, 51), color_for_selected_cursor=QColor(102, 0, 204))
         window.setFixedSize(600, 600)
-        window.plot.set_scale(10.0, 10.0)
-
-        curve = window.plot.add_curve()
-        curve.set_curve(self._prepare_curve())
-
         window.plot.add_cursor(QPoint(222, 51))
         window.plot.add_cursor(QPoint(450, 303))
         window.plot.add_cursor(QPoint(350, 103))
+        window.setToolTip("Должно быть две метки темно-красные и одна метка темно-синяя")
         self.assertEqual(len(window.plot.get_list_of_all_cursors()), 3)
         self.assertEqual(window.plot.cursors._current_index, 2)
-
         window.show()
         app.exec()

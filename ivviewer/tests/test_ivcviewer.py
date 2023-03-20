@@ -16,7 +16,9 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(800, 600)
-        window.plot.set_center_text("Context menu is disabled")
+        text = "В центре должен быть\nвыведен текст\nкрасного цвета"
+        window.plot.set_center_text(text)
+        window.setToolTip(text)
         self.assertTrue(window.plot._center_text_marker is not None)
         window.show()
         app.exec()
@@ -31,7 +33,9 @@ class TestCurves(unittest.TestCase):
         window.setFixedSize(800, 600)
         font = QFont("Courier", 100)
         color = QColor(0, 153, 204)
-        window.plot.set_center_text("Blue central text", font, color)
+        text = "В центре должен быть\nвыведен текст\nсинего цвета"
+        window.plot.set_center_text(text, font, color)
+        window.setToolTip(text)
         self.assertTrue(window.plot._center_text_marker is not None)
         window.show()
         app.exec()
@@ -44,7 +48,9 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(800, 600)
-        window.plot.set_center_text("Context menu is disabled")
+        text = "Не должно быть текста"
+        window.plot.set_center_text(text)
+        window.setToolTip(text)
         window.plot.clear_center_text()
         self.assertTrue(window.plot._center_text_marker is None)
         window.show()
@@ -60,7 +66,9 @@ class TestCurves(unittest.TestCase):
         window.setFixedSize(800, 600)
         font = QFont("Courier", 100)
         color = QColor(0, 51, 0)
-        window.plot.set_lower_text("Green lower text", font, color)
+        text = "В нижней части графика должен быть\nзеленый текст"
+        window.plot.set_lower_text(text, font, color)
+        window.setToolTip(text)
         self.assertTrue(window.plot._lower_text_marker is not None)
         window.show()
         app.exec()
@@ -73,7 +81,9 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(800, 600)
-        window.plot.set_lower_text("Green lower text")
+        text = "В нижней части графика не должно быть текста"
+        window.plot.set_lower_text(text)
+        window.setToolTip(text)
         window.plot.clear_lower_text()
         self.assertTrue(window.plot._lower_text_marker is None)
         window.show()
@@ -88,6 +98,7 @@ class TestCurves(unittest.TestCase):
         window = Viewer()
         window.setFixedSize(800, 600)
         window.plot.enable_context_menu_for_cursors(False)
+        window.setToolTip("В контекстном меню не должно быть работы с метками")
         self.assertTrue(window.plot._context_menu_works_with_cursors is False)
         window.show()
         app.exec()
@@ -101,6 +112,7 @@ class TestCurves(unittest.TestCase):
         window = Viewer()
         window.setFixedSize(800, 600)
         window.plot.enable_context_menu(False)
+        window.setToolTip("Не должно отображаться контекстное меню")
         self.assertEqual(window.plot.contextMenuPolicy(), Qt.NoContextMenu)
         window.show()
         app.exec()
@@ -115,6 +127,7 @@ class TestCurves(unittest.TestCase):
         window.setFixedSize(800, 600)
         window.plot.localize_widget(save_screenshot="Save image", add_cursor="Add cursor",
                                     remove_cursor="Remove cursor", remove_all_cursors="Remove all cursors")
+        window.setToolTip("Контекстное меню должно отображаться на английском языке")
         self.assertEqual(window.plot._items_for_localization["save_screenshot"]["translation"], "Save image")
         window.show()
         app.exec()
@@ -125,16 +138,16 @@ class TestCurves(unittest.TestCase):
         """
 
         app = QApplication(sys.argv)
-        window = Viewer()
+        window = Viewer(x_title="Ось X", y_title="Ось Y", x_label="x", y_label="y", accuracy=3)
         window.setFixedSize(800, 600)
-
+        window.plot.set_scale(6.0, 6.0)
         x_values = [-2.5, 0, 2.5]
         y_values = [-0.005, 0, 0.005]
         curve = window.plot.add_curve()
         curve.set_curve(Curve(x_values, y_values))
         curve.set_curve_param(QColor(255, 153, 102))
         window.plot.add_cursor(QPoint(222, 51))
-        window.plot.set_axis_titles("Ось X", "Ось Y", "x", "y")
+        window.setToolTip("Оси должны иметь названия X и Y. Точность координаты метки - три знака")
         self.assertEqual(window.plot._x_title, "Ось X")
         self.assertEqual(window.plot._y_title, "Ось Y")
         window.show()

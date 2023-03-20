@@ -61,7 +61,7 @@ class PlotCurve(QwtPlotCurve, QObject):
 
     def set_curve(self, curve: Optional[Curve]) -> None:
         self._set_curve(curve)
-        self.owner._IvcViewer__adjust_scale()
+        self.owner._adjust_scale()
         self.curve_changed.emit()
 
     def set_curve_param(self, param: Union[QBrush, QColor, QPen] = QColor(0, 0, 0, 200)) -> None:
@@ -392,8 +392,8 @@ class IvcViewer(QwtPlot):
     def __init__(self, owner, parent=None, solid_axis_enabled: bool = True, grid_color: QColor = None,
                  back_color: QColor = None, text_color: QColor = None, color_for_rest_cursors: QColor = None,
                  color_for_selected_cursor: QColor = None, axis_label_enabled: bool = True,
-                 axis_font: QFont = None, cursor_font: QFont = None, title_font: QFont = None, accuracy: int = None
-                 ) -> None:
+                 axis_font: QFont = None, cursor_font: QFont = None, title_font: QFont = None, x_title: str = None,
+                 y_title: str = None, x_label: str = None, y_label: str = None, accuracy: int = None) -> None:
         """
         :param owner: owner widget;
         :param parent: parent widget;
@@ -407,11 +407,15 @@ class IvcViewer(QwtPlot):
         :param axis_font: font for values on axes;
         :param cursor_font: font of text at cursors;
         :param title_font: axis titles font;
+        :param x_title: title for horizontal axis;
+        :param y_title: title for vertical axis;
+        :param x_label: short name for horizontal axis;
+        :param y_label: short name for vertical axis;
         :param accuracy: the accuracy with which you want to display coordinate values on cursors.
         """
 
         super().__init__(parent)
-        self.__owner = owner
+        self._owner = owner
         self._axis_font: QFont = axis_font if isinstance(axis_font, QFont) else _get_font(self.DEFAULT_AXIS_FONT_SIZE)
         self._grid_color: QColor = grid_color if isinstance(grid_color, QColor) else self.DEFAULT_GRID_COLOR
         self._text_color: QColor = text_color if isinstance(text_color, QColor) else self.DEFAULT_TEXT_COLOR
@@ -435,7 +439,7 @@ class IvcViewer(QwtPlot):
         # X Axis
         axis_pen = QPen(QBrush(self._grid_color), 2)
         self._x_short_name: str = None
-        self._x_title: str = self.DEFAULT_X_TITLE
+        self._x_title: str = x_title if x_title is not None else self.DEFAULT_X_TITLE
         self.x_axis: QwtPlotCurve = QwtPlotCurve()
         self.x_axis.setPen(axis_pen)
         self.x_axis.setData((-M, M), (0, 0))
@@ -445,7 +449,7 @@ class IvcViewer(QwtPlot):
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
         # Y Axis
         self._y_short_name: str = None
-        self._y_title: str = self.DEFAULT_Y_TITLE
+        self._y_title: str = y_title if y_title is not None else self.DEFAULT_Y_TITLE
         self.y_axis: QwtPlotCurve = QwtPlotCurve()
         self.y_axis.setPen(axis_pen)
         self.y_axis.setData((0, 0), (-M, M))
@@ -465,7 +469,8 @@ class IvcViewer(QwtPlot):
         self._y_scale: float = None
 
         self.cursors: IvcCursors = IvcCursors(self, cursor_font, color_for_rest=color_for_rest_cursors,
-                                              color_for_selected=color_for_selected_cursor, accuracy=accuracy)
+                                              color_for_selected=color_for_selected_cursor, x_label=x_label,
+                                              y_label=y_label, accuracy=accuracy)
         self.curves: List[PlotCurve] = []
         self._center_text: QwtText = None
         self._center_text_marker: QwtPlotMarker = None
@@ -486,19 +491,14 @@ class IvcViewer(QwtPlot):
             "remove_cursor": {"default": "Удалить метку"},
             "remove_all_cursors": {"default": "Удалить все метки"}
         }
-        self.__adjust_scale()
+        self._adjust_scale()
 
-    def __adjust_scale(self) -> None:
+    def _adjust_scale(self) -> None:
         x_scale = self._get_scale(self._x_scale, self._min_border_x)
         y_scale = self._get_scale(self._y_scale, self._min_border_y)
         self.setAxisScale(QwtPlot.xBottom, -x_scale, x_scale)
         self.setAxisScale(QwtPlot.yLeft, -y_scale, y_scale)
-        self.__update_align_lower_text(x_scale, y_scale)
-
-    def __update_align_lower_text(self, x_scale: float, y_scale: float) -> None:
-        if not self._lower_text:
-            return
-        self._lower_text_marker.setValue(-x_scale, -y_scale)
+        self._update_align_lower_text(x_scale, y_scale)
 
     def _get_default_screenshot_path(self) -> str:
         file_name = self._screenshot_file_name_base + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"
@@ -512,6 +512,12 @@ class IvcViewer(QwtPlot):
         if translation is not None:
             return translation
         return item.get("default", "")
+
+    @staticmethod
+    def _get_scale(scale: float, min_border: float) -> float:
+        if isinstance(scale, (float, int)) and scale > min_border:
+            return scale
+        return min_border
 
     def _set_axis_titles(self) -> None:
         x_axis_title = QwtText(self._x_title)
@@ -528,6 +534,11 @@ class IvcViewer(QwtPlot):
         x = np.round(self.invTransform(QwtPlot.xBottom, pos_x), 2)
         y = np.round(self.invTransform(QwtPlot.yLeft, pos_y), 2)
         return Point(x, y)
+
+    def _update_align_lower_text(self, x_scale: float, y_scale: float) -> None:
+        if not self._lower_text:
+            return
+        self._lower_text_marker.setValue(-x_scale, -y_scale)
 
     @pyqtSlot(QPoint)
     def add_cursor(self, position: QPoint) -> None:
@@ -565,16 +576,10 @@ class IvcViewer(QwtPlot):
             self._lower_text_marker = None
             self._lower_text = None
 
-    @staticmethod
-    def _get_scale(scale: float, min_border: float) -> float:
-        if isinstance(scale, (float, int)) and scale > min_border:
-            return scale
-        return min_border
-
     def clear_min_borders(self) -> None:
         self._min_border_x = abs(float(IvcViewer.MIN_BORDER_X))
         self._min_border_y = abs(float(IvcViewer.MIN_BORDER_Y))
-        self.__adjust_scale()
+        self._adjust_scale()
         self.min_borders_changed.emit()
 
     def enable_context_menu(self, enable: bool) -> None:
@@ -697,20 +702,6 @@ class IvcViewer(QwtPlot):
         if file_name:
             self.grab().save(file_name)
 
-    def set_axis_titles(self, x_title: str, y_title: str, x_short_name: str = None, y_short_name: str = None) -> None:
-        """
-        :param x_title: title for horizontal axis;
-        :param y_title: title for vertical axis;
-        :param x_short_name: short name for horizontal axis;
-        :param y_short_name: short name for vertical axis.
-        """
-
-        self._x_short_name = x_short_name if x_short_name is not None else self._x_short_name
-        self._x_title = x_title
-        self._y_short_name = y_short_name if y_short_name is not None else self._y_short_name
-        self._y_title = y_title
-        self._set_axis_titles()
-
     def set_center_text(self, text: str, font: QFont = None, color: QColor = None) -> None:
         """
         :param text: text to be shown in the center of the widget;
@@ -756,12 +747,12 @@ class IvcViewer(QwtPlot):
         self._lower_text_marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
         self._lower_text_marker.setLabel(self._lower_text)
         self._lower_text_marker.attach(self)
-        self.__adjust_scale()
+        self._adjust_scale()
 
     def set_min_borders(self, min_x: float, min_y: float) -> None:
         self._min_border_x = abs(float(min_x))
         self._min_border_y = abs(float(min_y))
-        self.__adjust_scale()
+        self._adjust_scale()
         self.min_borders_changed.emit()
 
     def set_path_to_screenshot_directory(self, dir_path: str) -> None:
@@ -776,7 +767,7 @@ class IvcViewer(QwtPlot):
     def set_scale(self, x_scale: float, y_scale: float) -> None:
         self._x_scale = x_scale
         self._y_scale = y_scale
-        self.__adjust_scale()
+        self._adjust_scale()
 
     def set_state_adding_cursor(self, state: bool) -> None:
         self._add_cursor_mode = state
