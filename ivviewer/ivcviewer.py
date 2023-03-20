@@ -606,7 +606,7 @@ class IvcViewer(QwtPlot):
         self.curves.append(curve)
         return curve
 
-    def _check_non_empty_curves(self) -> bool:
+    def check_non_empty_curves(self) -> bool:
         """
         Method checks if there are non-empty curves.
         :return: True if there are non-empty curves.
@@ -887,7 +887,7 @@ class IvcViewer(QwtPlot):
 
         if self._center_text_marker:
             return
-        non_empty_curves = self._check_non_empty_curves()
+        non_empty_curves = self.check_non_empty_curves()
         menu = QMenu(self)
         media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media")
         action_save_image = QAction(QIcon(os.path.join(media_dir, "save_image.png")),
