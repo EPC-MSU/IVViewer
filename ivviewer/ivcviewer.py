@@ -524,7 +524,7 @@ class IvcViewer(QwtPlot):
         self._remove_cursor_mode: bool = False
 
         self._context_menu_works_with_cursors: bool = True
-        self._screenshot_dir_path: str = "."
+        self._dir_path: str = "."
         self._screenshot_file_name_base: str = self.DEFAULT_SCREENSHOT_FILE_NAME_BASE
         self.enable_context_menu(True)
 
@@ -547,9 +547,9 @@ class IvcViewer(QwtPlot):
 
     def _get_default_path(self, file_base_name: str, extension: str) -> str:
         file_name = file_base_name + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + extension
-        if not os.path.isdir(self._screenshot_dir_path):
-            os.makedirs(self._screenshot_dir_path)
-        return os.path.join(self._screenshot_dir_path, file_name)
+        if not os.path.isdir(self._dir_path):
+            os.makedirs(self._dir_path)
+        return os.path.join(self._dir_path, file_name)
 
     def _get_item_label(self, item_name: str) -> str:
         item = self._items_for_localization.get(item_name, {})
@@ -838,14 +838,14 @@ class IvcViewer(QwtPlot):
         self._adjust_scale()
         self.min_borders_changed.emit()
 
-    def set_path_to_screenshot_directory(self, dir_path: str) -> None:
+    def set_path_to_directory(self, dir_path: str) -> None:
         """
-        Method sets path to directory where screenshots are saved by default.
+        Method sets path to directory where screenshots and IV curves are saved by default.
         :param dir_path: default directory path.
         """
 
         if os.path.isdir(dir_path):
-            self._screenshot_dir_path = dir_path
+            self._dir_path = dir_path
 
     def set_scale(self, x_scale: float, y_scale: float) -> None:
         self._x_scale = x_scale

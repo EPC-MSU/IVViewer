@@ -125,8 +125,9 @@ class TestCurves(unittest.TestCase):
         app = QApplication(sys.argv)
         window = Viewer()
         window.setFixedSize(800, 600)
-        window.plot.localize_widget(save_screenshot="Save image", add_cursor="Add cursor",
-                                    remove_cursor="Remove cursor", remove_all_cursors="Remove all cursors")
+        window.plot.localize_widget(add_cursor="Add cursor", export_ivc="Export IVC to file",
+                                    remove_all_cursors="Remove all cursors", remove_cursor="Remove cursor",
+                                    save_screenshot="Save image")
         window.setToolTip("Контекстное меню должно отображаться на английском языке")
         self.assertEqual(window.plot._items_for_localization["save_screenshot"]["translation"], "Save image")
         window.show()
