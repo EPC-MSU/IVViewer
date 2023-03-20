@@ -34,12 +34,19 @@ class PlotCurve(QwtPlotCurve, QObject):
     DEFAULT_WIDTH: float = 4
     curve_changed: pyqtSignal = pyqtSignal()
 
-    def __init__(self, owner: "IvcViewer", parent=None) -> None:
+    def __init__(self, owner: "IvcViewer", parent=None, label: Optional[str] = None) -> None:
+        """
+        :param owner:
+        :param parent:
+        :param label: label-name for curve.
+        """
+
         QwtPlotCurve.__init__(self, parent)
         QObject.__init__(self)
         self._curve: Optional[Curve] = None
         self.parent = parent
         self.owner: "IvcViewer" = owner
+        self.label: Optional[str] = label
 
     @property
     def curve(self) -> Optional[Curve]:
@@ -58,6 +65,13 @@ class PlotCurve(QwtPlotCurve, QObject):
 
     def get_curve(self) -> Optional[Curve]:
         return self._curve
+
+    def is_empty(self) -> bool:
+        """
+        :return: True if curve is empty.
+        """
+
+        return not self._curve
 
     def set_curve(self, curve: Optional[Curve]) -> None:
         self._set_curve(curve)
@@ -406,7 +420,9 @@ class IvcViewer(QwtPlot):
     DEFAULT_TEXT_COLOR: QColor = QColor(255, 0, 0)
     DEFAULT_TITLE_FONT_SIZE: int = 20
     DEFAULT_X_TITLE: str = "Напряжение, В"
+    DEFAULT_X_UNIT: str = "В"
     DEFAULT_Y_TITLE: str = "Ток, мА"
+    DEFAULT_Y_UNIT: str = "А"
     MIN_BORDER_Y: float = 0.5
     MIN_BORDER_X: float = 1.0
     curve_changed: pyqtSignal = pyqtSignal()
@@ -416,7 +432,8 @@ class IvcViewer(QwtPlot):
                  back_color: QColor = None, text_color: QColor = None, color_for_rest_cursors: QColor = None,
                  color_for_selected_cursor: QColor = None, axis_label_enabled: bool = True,
                  axis_font: QFont = None, cursor_font: QFont = None, title_font: QFont = None, x_title: str = None,
-                 y_title: str = None, x_label: str = None, y_label: str = None, accuracy: int = None) -> None:
+                 y_title: str = None, x_label: str = None, y_label: str = None, x_unit: str = None, y_unit: str = None,
+                 accuracy: int = None) -> None:
         """
         :param owner: owner widget;
         :param parent: parent widget;
@@ -434,6 +451,8 @@ class IvcViewer(QwtPlot):
         :param y_title: title for vertical axis;
         :param x_label: short name for horizontal axis;
         :param y_label: short name for vertical axis;
+        :param x_unit: unit of measure for the value along horizontal axis;
+        :param y_unit: unit of measure for the value along vertical axis;
         :param accuracy: the accuracy with which you want to display coordinate values on cursors.
         """
 
@@ -463,6 +482,7 @@ class IvcViewer(QwtPlot):
         axis_pen = QPen(QBrush(self._grid_color), 2)
         self._x_label: str = x_label
         self._x_title: str = x_title if x_title is not None else self.DEFAULT_X_TITLE
+        self._x_unit: str = x_unit if x_unit is not None else self.DEFAULT_X_UNIT
         self.x_axis: QwtPlotCurve = QwtPlotCurve()
         self.x_axis.setPen(axis_pen)
         self.x_axis.setData((-M, M), (0, 0))
@@ -473,6 +493,7 @@ class IvcViewer(QwtPlot):
         # Y Axis
         self._y_label: str = y_label
         self._y_title: str = y_title if y_title is not None else self.DEFAULT_Y_TITLE
+        self._y_unit: str = y_unit if y_unit is not None else self.DEFAULT_Y_UNIT
         self.y_axis: QwtPlotCurve = QwtPlotCurve()
         self.y_axis.setPen(axis_pen)
         self.y_axis.setData((0, 0), (-M, M))
@@ -508,10 +529,11 @@ class IvcViewer(QwtPlot):
         self.enable_context_menu(True)
 
         self._items_for_localization: Dict[str, Dict[str, str]] = {
-            "save_screenshot": {"default": "Сохранить изображение"},
             "add_cursor": {"default": "Добавить метку"},
+            "export_ivc": {"default": "Экспортировать кривые в файл"},
+            "remove_all_cursors": {"default": "Удалить все метки"},
             "remove_cursor": {"default": "Удалить метку"},
-            "remove_all_cursors": {"default": "Удалить все метки"}
+            "save_screenshot": {"default": "Сохранить изображение"},
         }
         self._set_axis_titles()
         self._adjust_scale()
@@ -523,8 +545,8 @@ class IvcViewer(QwtPlot):
         self.setAxisScale(QwtPlot.yLeft, -y_scale, y_scale)
         self._update_align_lower_text(x_scale, y_scale)
 
-    def _get_default_screenshot_path(self) -> str:
-        file_name = self._screenshot_file_name_base + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + ".png"
+    def _get_default_path(self, file_base_name: str, extension: str) -> str:
+        file_name = file_base_name + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + extension
         if not os.path.isdir(self._screenshot_dir_path):
             os.makedirs(self._screenshot_dir_path)
         return os.path.join(self._screenshot_dir_path, file_name)
@@ -584,6 +606,14 @@ class IvcViewer(QwtPlot):
         self.curves.append(curve)
         return curve
 
+    def _check_non_empty_curves(self) -> bool:
+        """
+        Method checks if there are non-empty curves.
+        :return: True if there are non-empty curves.
+        """
+
+        return any([not curve.is_empty() for curve in self.curves])
+
     def clear_center_text(self) -> None:
         if self._center_text_marker:
             self._center_text_marker.detach()
@@ -628,6 +658,33 @@ class IvcViewer(QwtPlot):
         """
 
         self._context_menu_works_with_cursors = enable
+
+    @pyqtSlot()
+    def export_ivc(self) -> None:
+        """
+        Slot exports IV curves to file.
+        """
+
+        def print_to_file(file_, curve_label: str, curve_: Curve) -> None:
+            print(f"\n{curve_label} curve:", file=file_)
+            print(f"{self._x_unit}, {self._y_unit}", file=file_)
+            for voltage, current in zip(curve_.voltages, curve_.currents):
+                print(f"{voltage}, {current}", file=file_)
+
+        default_file_name = self._get_default_path("ivc", ".csv")
+        options = {}
+        if platform.system().lower() != "windows":
+            options["options"] = QFileDialog.DontUseNativeDialog
+        file_name = QFileDialog.getSaveFileName(self, self._get_item_label("export_ivc"), default_file_name,
+                                                "CSV files (*.csv)", **options)[0]
+        if not file_name:
+            return
+        if not file_name.endswith(".csv"):
+            file_name += ".csv"
+        with open(file_name, "w") as file:
+            for index, curve in enumerate(self.curves, start=1):
+                if curve is not None and not curve.is_empty():
+                    print_to_file(file, curve.label if curve.label else index, curve.curve)
 
     def get_list_of_all_cursors(self) -> List[IvcCursor]:
         """
@@ -716,16 +773,17 @@ class IvcViewer(QwtPlot):
         Slot saves graph as image.
         """
 
-        default_file_name = self._get_default_screenshot_path()
-        if platform.system().lower() == "windows":
-            file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"),
-                                                    default_file_name, "Images (*.png)")[0]
-        else:
-            file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"),
-                                                    default_file_name, "Images (*.png)",
-                                                    options=QFileDialog.DontUseNativeDialog)[0]
-        if file_name:
-            self.grab().save(file_name)
+        default_file_name = self._get_default_path("image", ".png")
+        options = {}
+        if platform.system().lower() != "windows":
+            options["options"] = QFileDialog.DontUseNativeDialog
+        file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"), default_file_name,
+                                                "Images (*.png)", **options)[0]
+        if not file_name:
+            return
+        if not file_name.endswith(".png"):
+            file_name += ".png"
+        self.grab().save(file_name)
 
     def set_center_text(self, text: str, font: QFont = None, color: QColor = None) -> None:
         """
@@ -829,12 +887,19 @@ class IvcViewer(QwtPlot):
 
         if self._center_text_marker:
             return
+        non_empty_curves = self._check_non_empty_curves()
         menu = QMenu(self)
         media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media")
         action_save_image = QAction(QIcon(os.path.join(media_dir, "save_image.png")),
                                     self._get_item_label("save_screenshot"), menu)
+        action_save_image.setEnabled(non_empty_curves)
         action_save_image.triggered.connect(self.save_image)
         menu.addAction(action_save_image)
+        action_export_ivc = QAction(QIcon(os.path.join(media_dir, "export.png")), self._get_item_label("export_ivc"),
+                                    menu)
+        action_export_ivc.setEnabled(non_empty_curves)
+        action_export_ivc.triggered.connect(self.export_ivc)
+        menu.addAction(action_export_ivc)
         if self._context_menu_works_with_cursors:
             action_add_cursor = QAction(QIcon(os.path.join(media_dir, "add_cursor.png")),
                                         self._get_item_label("add_cursor"), menu)
@@ -851,20 +916,6 @@ class IvcViewer(QwtPlot):
                 action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
                 menu.addAction(action_remove_all_cursors)
         menu.popup(self.mapToGlobal(pos))
-
-    def show_rect_axes(self) -> None:
-        """
-        Method shows plot in rectangle each side of which is an axis.
-        """
-
-        for axis in (QwtPlot.xBottom, QwtPlot.xTop, QwtPlot.yLeft, QwtPlot.yRight):
-            self.enableAxis(axis, True)
-            self.setAxisMaxMajor(axis, 5)
-            self.setAxisMaxMinor(axis, 5)
-        self.setAxisFont(QwtPlot.xTop, self._axis_font)
-        self.setAxisFont(QwtPlot.yRight, self._axis_font)
-        self.setAxisScale(QwtPlot.xTop, -self._x_scale, self._x_scale)
-        self.setAxisScale(QwtPlot.yRight, -self._y_scale, self._y_scale)
 
 
 def _get_font(size: int) -> QFont:
