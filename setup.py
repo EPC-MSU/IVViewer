@@ -6,7 +6,7 @@ setup(
     name="ivviewer",
     packages=find_packages(),
     install_requires=[
-        "PyQt5",
+        "PyQt5>=5.8.2, <=5.15.0",
         "numpy==1.18.1",
         "PythonQwt==0.8.3",
         "dataclasses==0.8"
