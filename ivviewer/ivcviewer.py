@@ -64,7 +64,7 @@ class PlotCurve(QwtPlotCurve, QObject):
         self.owner._adjust_scale()
         self.curve_changed.emit()
 
-    def set_curve_param(self, param: Union[QBrush, QColor, QPen] = QColor(0, 0, 0, 200)) -> None:
+    def set_curve_params(self, param: Union[QBrush, QColor, QPen] = QColor(0, 0, 0, 200)) -> None:
         """
         :param param: brush, color or pen for curve.
         """
@@ -219,6 +219,17 @@ class IvcCursor:
         self._cross_x.setPen(pen_for_cross)
         self._cross_y.setPen(pen_for_cross)
 
+    def set_axis_labels(self, x_label: str, y_label: str) -> None:
+        """
+        :param x_label: label for horizontal axis;
+        :param y_label: label for vertical axis.
+        """
+
+        if x_label:
+            self._x_label = x_label
+        if y_label:
+            self._y_label = y_label
+
 
 class IvcCursors:
     """
@@ -364,6 +375,18 @@ class IvcCursors:
             self._cursors.pop(self._current_index)
             self._current_index = None
 
+    def set_axis_labels(self, x_label: str, y_label: str) -> None:
+        """
+        :param x_label: label fot horizontal axis;
+        :param y_label: label for vertical axis.
+        """
+
+        if x_label:
+            self._x_label = x_label
+        if y_label:
+            self._y_label = y_label
+        _ = [cursor.set_axis_labels(self._x_label, self._y_label) for cursor in self._cursors]
+
     def set_current_cursor(self, pos: Point) -> None:
         """
         Method finds cursor at given point.
@@ -438,7 +461,7 @@ class IvcViewer(QwtPlot):
         self.canvas().setCursor(QCursor(Qt.ArrowCursor))
         # X Axis
         axis_pen = QPen(QBrush(self._grid_color), 2)
-        self._x_short_name: str = None
+        self._x_label: str = x_label
         self._x_title: str = x_title if x_title is not None else self.DEFAULT_X_TITLE
         self.x_axis: QwtPlotCurve = QwtPlotCurve()
         self.x_axis.setPen(axis_pen)
@@ -448,7 +471,7 @@ class IvcViewer(QwtPlot):
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
         # Y Axis
-        self._y_short_name: str = None
+        self._y_label: str = y_label
         self._y_title: str = y_title if y_title is not None else self.DEFAULT_Y_TITLE
         self.y_axis: QwtPlotCurve = QwtPlotCurve()
         self.y_axis.setPen(axis_pen)
@@ -458,7 +481,6 @@ class IvcViewer(QwtPlot):
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
 
-        self._set_axis_titles()
         self.enableAxis(QwtPlot.xBottom, axis_label_enabled)
         self.enableAxis(QwtPlot.yLeft, axis_label_enabled)
 
@@ -491,6 +513,7 @@ class IvcViewer(QwtPlot):
             "remove_cursor": {"default": "Удалить метку"},
             "remove_all_cursors": {"default": "Удалить все метки"}
         }
+        self._set_axis_titles()
         self._adjust_scale()
 
     def _adjust_scale(self) -> None:
@@ -528,6 +551,8 @@ class IvcViewer(QwtPlot):
         y_axis_title.setFont(self._title_font)
         self.setAxisTitle(QwtPlot.yLeft, y_axis_title)
 
+        self.cursors.set_axis_labels(self._x_label, self._y_label)
+
     def _transform_point_coordinates(self, pos: QPoint) -> Point:
         pos_x = pos.x() - self.canvas().x()
         pos_y = pos.y() - self.canvas().y()
@@ -553,7 +578,7 @@ class IvcViewer(QwtPlot):
 
     def add_curve(self) -> PlotCurve:
         curve = PlotCurve(self)
-        curve.set_curve_param(QColor(255, 0, 0, 200))
+        curve.set_curve_params(QColor(255, 0, 0, 200))
         curve.attach(self)
         curve.curve_changed.connect(self.curve_changed.emit)
         self.curves.append(curve)
@@ -774,6 +799,26 @@ class IvcViewer(QwtPlot):
 
     def set_state_removing_cursor(self, state: bool) -> None:
         self._remove_cursor_mode = state
+
+    def set_x_axis_title(self, title: str, label: str = None) -> None:
+        """
+        :param title: title for horizontal axis;
+        :param label: short name for horizontal axis.
+        """
+
+        self._x_title = title
+        self._x_label = label if label is not None else self._x_label
+        self._set_axis_titles()
+
+    def set_y_axis_title(self, title: str, label: str = None) -> None:
+        """
+        :param title: title for vertical axis;
+        :param label: short name for vertical axis.
+        """
+
+        self._y_title = title
+        self._y_label = label if label is not None else self._y_label
+        self._set_axis_titles()
 
     @pyqtSlot(QPoint)
     def show_context_menu(self, pos: QPoint) -> None:

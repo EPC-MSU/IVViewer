@@ -145,7 +145,7 @@ class TestCurves(unittest.TestCase):
         y_values = [-0.005, 0, 0.005]
         curve = window.plot.add_curve()
         curve.set_curve(Curve(x_values, y_values))
-        curve.set_curve_param(QColor(255, 153, 102))
+        curve.set_curve_params(QColor(255, 153, 102))
         window.plot.add_cursor(QPoint(222, 51))
         window.setToolTip("Оси должны иметь названия X и Y. Точность координаты метки - три знака")
         self.assertEqual(window.plot._x_title, "Ось X")

@@ -22,7 +22,7 @@ class TestCurve(unittest.TestCase):
         y_1 = [-0.005, 0.005]
         curve_1 = window.plot.add_curve()
         curve_1.set_curve(Curve(x_1, y_1))
-        curve_1.set_curve_param(QColor(255, 153, 102))
+        curve_1.set_curve_params(QColor(255, 153, 102))
         self.assertEqual(curve_1.curve.voltages, x_1)
         self.assertEqual(curve_1.curve.currents, y_1)
 
@@ -30,7 +30,7 @@ class TestCurve(unittest.TestCase):
         y_2 = [-0.003, 0.003]
         curve_2 = window.plot.add_curve()
         curve_2.set_curve(Curve(x_2, y_2))
-        curve_2.set_curve_param(QPen(QBrush(QColor(0, 153, 255)), 2))
+        curve_2.set_curve_params(QPen(QBrush(QColor(0, 153, 255)), 2))
         self.assertEqual(curve_2.curve.voltages, x_2)
         self.assertEqual(curve_2.curve.currents, y_2)
 
@@ -54,13 +54,13 @@ class TestCurve(unittest.TestCase):
         y_1 = [-0.005, 0, 0.005]
         curve_1 = window.plot.add_curve()
         curve_1.set_curve(Curve(x_1, y_1))
-        curve_1.set_curve_param(QColor(255, 153, 102))
+        curve_1.set_curve_params(QColor(255, 153, 102))
 
         x_2 = [-2.5, 0, 2.5]
         y_2 = [-0.003, 0, 0.003]
         curve_2 = window.plot.add_curve()
         curve_2.set_curve(Curve(x_2, y_2))
-        curve_2.set_curve_param(QPen(QBrush(QColor(0, 153, 255)), 2))
+        curve_2.set_curve_params(QPen(QBrush(QColor(0, 153, 255)), 2))
 
         curve_1.clear_curve()
         self.assertTrue(curve_1.curve is None)
