@@ -1,155 +1,164 @@
 import sys
-import unittest
 from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import QApplication
-from ivviewer import Curve, Viewer
+from ivviewer import Viewer
+from .utils import prepare_test
 
 
-class TestCurves(unittest.TestCase):
+class TestViewer:
 
-    def test_1_show_center_text(self) -> None:
+    @prepare_test
+    def test_1_show_center_text(self, window: Viewer) -> None:
         """
         Test checks that text is displayed in the center of plot.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         text = "В центре должен быть\nвыведен текст\nкрасного цвета"
         window.plot.set_center_text(text)
         window.setToolTip(text)
-        self.assertTrue(window.plot._center_text_marker is not None)
-        window.show()
-        app.exec()
+        assert window.plot._center_text_marker is not None
+        label = window.plot._center_text_marker.label()
+        assert label.text() == text
+        assert label.color() == window.plot.DEFAULT_TEXT_COLOR
 
-    def test_2_show_center_text_with_user_settings(self) -> None:
+    @prepare_test
+    def test_2_show_center_text_with_user_settings(self, window: Viewer) -> None:
         """
         Test checks that text is displayed in the center of plot with user settings.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         font = QFont("Courier", 100)
         color = QColor(0, 153, 204)
         text = "В центре должен быть\nвыведен текст\nсинего цвета"
         window.plot.set_center_text(text, font, color)
         window.setToolTip(text)
-        self.assertTrue(window.plot._center_text_marker is not None)
-        window.show()
-        app.exec()
+        assert window.plot._center_text_marker is not None
+        label = window.plot._center_text_marker.label()
+        assert label.text() == text
+        assert label.font() == font
+        assert label.color() == color
 
-    def test_3_remove_center_text(self) -> None:
+    @prepare_test
+    def test_3_remove_center_text(self, window: Viewer) -> None:
         """
         Test checks that text in the center of plot is removed.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         text = "Не должно быть текста"
         window.plot.set_center_text(text)
         window.setToolTip(text)
         window.plot.clear_center_text()
-        self.assertTrue(window.plot._center_text_marker is None)
-        window.show()
-        app.exec()
+        assert window.plot._center_text_marker is None
 
-    def test_4_show_lower_text_with_user_settings(self) -> None:
+    @prepare_test
+    def test_4_show_lower_text_with_user_settings(self, window: Viewer) -> None:
         """
         Test checks that text is displayed in the lower part of plot with user settings.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         font = QFont("Courier", 100)
         color = QColor(0, 51, 0)
         text = "В нижней части графика должен быть\nзеленый текст"
         window.plot.set_lower_text(text, font, color)
         window.setToolTip(text)
-        self.assertTrue(window.plot._lower_text_marker is not None)
-        window.show()
-        app.exec()
+        assert window.plot._lower_text_marker is not None
+        label = window.plot._lower_text_marker.label()
+        assert label.text() == text
+        assert label.font() == font
+        assert label.color() == color
 
-    def test_5_remove_lower_text(self) -> None:
+    @prepare_test
+    def test_5_remove_lower_text(self, window: Viewer) -> None:
         """
         Test checks that text in the lower part of plot is removed.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         text = "В нижней части графика не должно быть текста"
         window.plot.set_lower_text(text)
         window.setToolTip(text)
         window.plot.clear_lower_text()
-        self.assertTrue(window.plot._lower_text_marker is None)
-        window.show()
-        app.exec()
+        assert window.plot._lower_text_marker is None
 
-    def test_6_disable_context_menu_for_cursors(self) -> None:
+    @prepare_test
+    def test_6_disable_context_menu_for_cursors(self, window: Viewer) -> None:
         """
         Test verifies that deactivation of cursors in the context menu works.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         window.plot.enable_context_menu_for_cursors(False)
         window.setToolTip("В контекстном меню не должно быть работы с метками")
-        self.assertTrue(window.plot._context_menu_works_with_cursors is False)
-        window.show()
-        app.exec()
+        assert window.plot._context_menu_works_with_cursors is False
 
-    def test_7_disable_context_menu(self) -> None:
+    @prepare_test
+    def test_7_disable_context_menu(self, window: Viewer) -> None:
         """
         Test checks that it is possible to deactivate the context menu.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         window.plot.enable_context_menu(False)
         window.setToolTip("Не должно отображаться контекстное меню")
-        self.assertEqual(window.plot.contextMenuPolicy(), Qt.NoContextMenu)
-        window.show()
-        app.exec()
+        assert window.plot.contextMenuPolicy() == Qt.NoContextMenu
 
-    def test_8_localize(self) -> None:
+    @prepare_test
+    def test_8_localize(self, window: Viewer) -> None:
         """
         Test verifies that localization of context menu items works.
+        :param window: viewer widget.
         """
 
-        app = QApplication(sys.argv)
-        window = Viewer()
-        window.setFixedSize(800, 600)
         window.plot.localize_widget(add_cursor="Add cursor", export_ivc="Export IVC to file",
                                     remove_all_cursors="Remove all cursors", remove_cursor="Remove cursor",
                                     save_screenshot="Save image")
         window.setToolTip("Контекстное меню должно отображаться на английском языке")
-        self.assertEqual(window.plot._items_for_localization["save_screenshot"]["translation"], "Save image")
-        window.show()
-        app.exec()
+        assert window.plot._items_for_localization["add_cursor"]["translation"] == "Add cursor"
+        assert window.plot._items_for_localization["export_ivc"]["translation"] == "Export IVC to file"
+        assert window.plot._items_for_localization["remove_all_cursors"]["translation"] == "Remove all cursors"
+        assert window.plot._items_for_localization["remove_cursor"]["translation"] == "Remove cursor"
+        assert window.plot._items_for_localization["save_screenshot"]["translation"] == "Save image"
 
-    def test_9_set_axis_titles(self) -> None:
+    def test_9_set_axis_titles_in_constructor(self, display_window: bool) -> None:
         """
         Test checks assignment of titles to axes.
+        :param display_window: if True then widget will be displayed.
         """
 
         app = QApplication(sys.argv)
         window = Viewer(x_title="Ось X", y_title="Ось Y", x_label="x", y_label="y", accuracy=3)
         window.setFixedSize(800, 600)
-        window.plot.set_scale(6.0, 6.0)
-        x_values = [-2.5, 0, 2.5]
-        y_values = [-0.005, 0, 0.005]
-        curve = window.plot.add_curve()
-        curve.set_curve(Curve(x_values, y_values))
-        curve.set_curve_params(QColor(255, 153, 102))
         window.plot.add_cursor(QPoint(222, 51))
         window.setToolTip("Оси должны иметь названия X и Y. Точность координаты метки - три знака")
-        self.assertEqual(window.plot._x_title, "Ось X")
-        self.assertEqual(window.plot._y_title, "Ось Y")
-        window.show()
-        app.exec()
+        assert window.plot._x_title == "Ось X"
+        assert window.plot._y_title == "Ось Y"
+        for cursor in window.plot.cursors.cursors:
+            assert cursor._accuracy == 3
+            assert cursor._x_label == "x"
+            assert cursor._y_label == "y"
+
+        if display_window:
+            window.show()
+            app.exec()
+
+    @prepare_test
+    def test_10_set_axis_titles_by_method(self, window: Viewer) -> None:
+        """
+        Test checks assignment of titles to axes.
+        :param window: viewer widget.
+        """
+
+        window.plot.add_cursor(QPoint(222, 51))
+        window.plot.set_x_axis_title("Ось X", "x")
+        window.plot.set_y_axis_title("Ось Y", "y")
+        window.setToolTip("Оси должны иметь названия X и Y")
+        assert window.plot._x_title == "Ось X"
+        assert window.plot._y_title == "Ось Y"
+        for cursor in window.plot.get_list_of_all_cursors():
+            assert cursor._x_label == "x"
+            assert cursor._y_label == "y"

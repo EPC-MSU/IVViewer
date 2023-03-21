@@ -243,6 +243,7 @@ class IvcCursor:
             self._x_label = x_label
         if y_label:
             self._y_label = y_label
+        self._marker.label().setText(self.cursor_text)
 
 
 class IvcCursors:
