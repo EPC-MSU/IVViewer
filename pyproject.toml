@@ -18,7 +18,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "dataclasses==0.8",
+    "dataclasses==0.8; python_version~='3.6.0'",
     "numpy==1.18.1",
     "PyQt5>=5.8.2, <=5.15.2",
     "PyQt5-sip>=12.0",
