@@ -11,9 +11,6 @@ from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
 
 
-M = 10000
-
-
 @dataclass
 class Curve:
     voltages: List[float]
@@ -206,8 +203,8 @@ class IvcCursor:
 
     def move(self, pos: Point) -> None:
         self.x, self.y = pos.x, pos.y
-        self._x_axis.setData((pos.x, pos.x), (-M, M))
-        self._y_axis.setData((-M, M), (pos.y, pos.y))
+        self._x_axis.setData((pos.x, pos.x), (-self._plot.y_scale, self._plot.y_scale))
+        self._y_axis.setData((-self._plot.x_scale, self._plot.x_scale), (pos.y, pos.y))
         self._marker.setValue(pos.x, pos.y)
         self._marker.label().setText(self.cursor_text)
         self._set_cross_xy()
@@ -232,6 +229,7 @@ class IvcCursor:
             pen_for_cross = self._get_pen(param_for_cross)
         self._cross_x.setPen(pen_for_cross)
         self._cross_y.setPen(pen_for_cross)
+        self._set_cross_xy()
 
     def set_axis_labels(self, x_label: str, y_label: str) -> None:
         """
@@ -479,6 +477,11 @@ class IvcViewer(QwtPlot):
         back_color = back_color if isinstance(back_color, QColor) else self.DEFAULT_BACK_COLOR
         self.setCanvasBackground(QBrush(back_color, Qt.SolidPattern))
         self.canvas().setCursor(QCursor(Qt.ArrowCursor))
+        # Initial setup for axis scales
+        self._min_border_x: float = abs(float(IvcViewer.MIN_BORDER_X))
+        self._min_border_y: float = abs(float(IvcViewer.MIN_BORDER_Y))
+        self._x_scale: float = None
+        self._y_scale: float = None
         # X Axis
         axis_pen = QPen(QBrush(self._grid_color), 2)
         self._x_label: str = x_label
@@ -486,7 +489,6 @@ class IvcViewer(QwtPlot):
         self._x_unit: str = x_unit if x_unit is not None else self.DEFAULT_X_UNIT
         self.x_axis: QwtPlotCurve = QwtPlotCurve()
         self.x_axis.setPen(axis_pen)
-        self.x_axis.setData((-M, M), (0, 0))
         self.x_axis.attach(self)
         self.setAxisFont(QwtPlot.xBottom, self._axis_font)
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
@@ -497,7 +499,6 @@ class IvcViewer(QwtPlot):
         self._y_unit: str = y_unit if y_unit is not None else self.DEFAULT_Y_UNIT
         self.y_axis: QwtPlotCurve = QwtPlotCurve()
         self.y_axis.setPen(axis_pen)
-        self.y_axis.setData((0, 0), (-M, M))
         self.y_axis.attach(self)
         self.setAxisFont(QwtPlot.yLeft, self._axis_font)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
@@ -505,12 +506,6 @@ class IvcViewer(QwtPlot):
 
         self.enableAxis(QwtPlot.xBottom, axis_label_enabled)
         self.enableAxis(QwtPlot.yLeft, axis_label_enabled)
-
-        # Initial setup for axis scales
-        self._min_border_x: float = abs(float(IvcViewer.MIN_BORDER_X))
-        self._min_border_y: float = abs(float(IvcViewer.MIN_BORDER_Y))
-        self._x_scale: float = None
-        self._y_scale: float = None
 
         self.cursors: IvcCursors = IvcCursors(self, cursor_font, color_for_rest=color_for_rest_cursors,
                                               color_for_selected=color_for_selected_cursor, x_label=x_label,
@@ -539,11 +534,21 @@ class IvcViewer(QwtPlot):
         self._set_axis_titles()
         self._adjust_scale()
 
+    @property
+    def x_scale(self) -> float:
+        return self._get_scale(self._x_scale, self._min_border_x)
+
+    @property
+    def y_scale(self) -> float:
+        return self._get_scale(self._y_scale, self._min_border_y)
+
     def _adjust_scale(self) -> None:
-        x_scale = self._get_scale(self._x_scale, self._min_border_x)
-        y_scale = self._get_scale(self._y_scale, self._min_border_y)
+        x_scale = self.x_scale
+        y_scale = self.y_scale
         self.setAxisScale(QwtPlot.xBottom, -x_scale, x_scale)
         self.setAxisScale(QwtPlot.yLeft, -y_scale, y_scale)
+        self.x_axis.setData((-self.x_scale, self.x_scale), (0, 0))
+        self.y_axis.setData((0, 0), (-self.y_scale, self.y_scale))
         self._update_align_lower_text(x_scale, y_scale)
 
     def _get_default_path(self, file_base_name: str, extension: str) -> str:
@@ -561,9 +566,9 @@ class IvcViewer(QwtPlot):
 
     @staticmethod
     def _get_scale(scale: float, min_border: float) -> float:
-        if isinstance(scale, (float, int)) and scale > min_border:
-            return scale
-        return min_border
+        if isinstance(scale, (float, int)) and abs(scale) > abs(min_border):
+            return abs(scale)
+        return abs(min_border)
 
     def _set_axis_titles(self) -> None:
         x_axis_title = QwtText(self._x_title)
