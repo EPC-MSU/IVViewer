@@ -8,7 +8,7 @@ version = "0.1.13"
 authors = [
   { name="EPC MSU", email="info@physlab.ru" },
 ]
-description = "A configurable Qt widget that displays I-V curves."
+description = "A configurable Qt widget that displays IV curves"
 readme = "README-pypi.md"
 license = { file="LICENSE" }
 requires-python = ">=3.6, <=3.9.13"
