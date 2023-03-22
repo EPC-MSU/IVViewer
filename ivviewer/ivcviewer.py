@@ -268,9 +268,10 @@ class IvcViewer(QwtPlot):
         self._context_menu_works_with_cursors = enable
 
     @pyqtSlot()
-    def export_ivc(self) -> None:
+    def export_ivc(self, ask_where_to_export: bool = True) -> None:
         """
         Slot exports IV curves to file.
+        :param ask_where_to_export: if True, then you need to ask the user where exactly to export curves.
         """
 
         def print_to_file(file_, curve_label: str, curve_: Curve) -> None:
@@ -283,8 +284,11 @@ class IvcViewer(QwtPlot):
         options = {}
         if platform.system().lower() != "windows":
             options["options"] = QFileDialog.DontUseNativeDialog
-        file_name = QFileDialog.getSaveFileName(self, self._get_item_label("export_ivc"), default_file_name,
-                                                "CSV files (*.csv)", **options)[0]
+        if ask_where_to_export:
+            file_name = QFileDialog.getSaveFileName(self, self._get_item_label("export_ivc"), default_file_name,
+                                                    "CSV files (*.csv)", **options)[0]
+        else:
+            file_name = default_file_name
         if not file_name:
             return
         if not file_name.endswith(".csv"):
@@ -376,17 +380,21 @@ class IvcViewer(QwtPlot):
         self.cursors.remove_current_cursor()
 
     @pyqtSlot()
-    def save_image(self) -> None:
+    def save_image(self, ask_where_to_save: bool = True) -> None:
         """
         Slot saves graph as image.
+        :param ask_where_to_save: if True, then you need to ask the user where exactly to save the image.
         """
 
         default_file_name = self._get_default_path("image", ".png")
         options = {}
         if platform.system().lower() != "windows":
             options["options"] = QFileDialog.DontUseNativeDialog
-        file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"), default_file_name,
-                                                "Images (*.png)", **options)[0]
+        if ask_where_to_save:
+            file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"), default_file_name,
+                                                    "Images (*.png)", **options)[0]
+        else:
+            file_name = default_file_name
         if not file_name:
             return
         if not file_name.endswith(".png"):

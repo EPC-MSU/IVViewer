@@ -1,8 +1,10 @@
+import os
+import re
 import sys
 from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import QApplication
-from ivviewer import Viewer
+from ivviewer import Curve, Viewer
 from .utils import prepare_test
 
 
@@ -162,3 +164,47 @@ class TestViewer:
         for cursor in window.plot.get_list_of_all_cursors():
             assert cursor._x_label == "x"
             assert cursor._y_label == "y"
+
+    @prepare_test
+    def test_11_save_screenshot(self, window: Viewer) -> None:
+        """
+        Test checks if screenshot is saved.
+        :param window: viewer widget.
+        """
+
+        dir_to_save = os.path.join(os.path.curdir, "test_results")
+        window.plot.set_path_to_directory(dir_to_save)
+        files_before = set(os.listdir(dir_to_save))
+        window.plot.save_image(False)
+        window.setToolTip("В папке test_results должно появиться png изображение")
+        files_after = set(os.listdir(dir_to_save))
+        new_files = files_after.difference(files_before)
+        assert len(new_files) == 1
+        assert re.match(r"^image_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.png$", new_files.pop())
+
+    @prepare_test
+    def test_12_export_ivc(self, window: Viewer) -> None:
+        """
+        Test
+        :param window: viewer widget.
+        """
+
+        x_values = [-2.5, 2.5]
+        y_values = [-0.005, 0.005]
+        curve = window.plot.add_curve()
+        curve.set_curve(Curve(x_values, y_values))
+
+        dir_to_export = os.path.join(os.path.curdir, "test_results")
+        window.plot.set_path_to_directory(dir_to_export)
+        files_before = set(os.listdir(dir_to_export))
+        window.plot.export_ivc(False)
+        window.setToolTip("В папке test_results должен появиться csv файл")
+        files_after = set(os.listdir(dir_to_export))
+        new_files = files_after.difference(files_before)
+        assert len(new_files) == 1
+        file_name = new_files.pop()
+        assert re.match(r"^ivc_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.csv$", file_name)
+
+        with open(os.path.join(dir_to_export, file_name), "r") as file:
+            content = file.read()
+        assert content == "\n1 curve:\nВ, А\n-2.5, -0.005\n2.5, 0.005\n"

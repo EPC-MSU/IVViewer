@@ -5,4 +5,5 @@
 .idea
 *.iml
 *.csv
-venv
+venv/
+test_results/
