@@ -2,8 +2,7 @@ import sys
 from PyQt5.QtCore import QPoint
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication
-from ivviewer import Viewer
-from ivviewer.ivcviewer import Point
+from ivviewer import Point, Viewer
 from .utils import MouseEvent, prepare_test
 
 
