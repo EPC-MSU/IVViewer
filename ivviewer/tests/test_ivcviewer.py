@@ -32,9 +32,9 @@ class TestViewer:
         :param window: viewer widget.
         """
 
-        font = QFont("Courier", 100)
+        font = QFont("", 30, -1, True)
         color = QColor(0, 153, 204)
-        text = "В центре должен быть\nвыведен текст\nсинего цвета"
+        text = "В центре должен быть\nвыведен курсивом текст\nсинего цвета"
         window.plot.set_center_text(text, font, color)
         window.setToolTip(text)
         assert window.plot._center_text_marker is not None
@@ -63,9 +63,9 @@ class TestViewer:
         :param window: viewer widget.
         """
 
-        font = QFont("Courier", 100)
+        font = QFont("", 20, 3, True)
         color = QColor(0, 51, 0)
-        text = "В нижней части графика должен быть\nзеленый текст"
+        text = "В нижней части графика должен быть\nкурсивный зеленый текст"
         window.plot.set_lower_text(text, font, color)
         window.setToolTip(text)
         assert window.plot._lower_text_marker is not None
