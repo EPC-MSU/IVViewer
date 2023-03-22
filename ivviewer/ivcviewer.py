@@ -16,8 +16,9 @@ class IvcViewer(QwtPlot):
 
     DEFAULT_AXIS_FONT_SIZE: int = 20
     DEFAULT_BACK_COLOR: QColor = QColor(0xe1, 0xed, 0xeb)
+    DEFAULT_CENTER_TEXT_FONT_SIZE: int = 40
     DEFAULT_GRID_COLOR: QColor = QColor(0, 0, 0)
-    DEFAULT_SCREENSHOT_FILE_NAME_BASE: str = "screenshot"
+    DEFAULT_LOWER_TEXT_FONT_SIZE: int = 10
     DEFAULT_TEXT_COLOR: QColor = QColor(255, 0, 0)
     DEFAULT_TITLE_FONT_SIZE: int = 20
     DEFAULT_X_TITLE: str = "Напряжение, В"
@@ -123,7 +124,6 @@ class IvcViewer(QwtPlot):
 
         self._context_menu_works_with_cursors: bool = True
         self._dir_path: str = "."
-        self._screenshot_file_name_base: str = self.DEFAULT_SCREENSHOT_FILE_NAME_BASE
         self.enable_context_menu(True)
 
         self._items_for_localization: Dict[str, Dict[str, str]] = {
@@ -344,7 +344,7 @@ class IvcViewer(QwtPlot):
 
         if event.button() == Qt.LeftButton and not self._center_text_marker:
             pos = self._transform_point_coordinates(event.pos())
-            self.cursors.set_current_cursor(pos)
+            self.cursors.set_current_cursor(event.pos())
             if self._add_cursor_mode:
                 self.cursors.add_cursor(pos)
             elif self._remove_cursor_mode:
@@ -411,7 +411,7 @@ class IvcViewer(QwtPlot):
         _ = [curve.detach() for curve in self.curves]
 
         self._center_text = QwtText(text)
-        self._center_text.setFont(font if isinstance(font, QFont) else QFont("", 40))
+        self._center_text.setFont(font if isinstance(font, QFont) else QFont("", self.DEFAULT_CENTER_TEXT_FONT_SIZE))
         self._center_text.setColor(color if isinstance(color, QColor) else self._text_color)
         self._center_text_marker = QwtPlotMarker()
         self._center_text_marker.setValue(0, 0)
@@ -430,7 +430,7 @@ class IvcViewer(QwtPlot):
             return
         self.clear_lower_text()  # Clear current text
         self._lower_text = QwtText(text)
-        self._lower_text.setFont(font if isinstance(font, QFont) else QFont("", 10))
+        self._lower_text.setFont(font if isinstance(font, QFont) else QFont("", self.DEFAULT_LOWER_TEXT_FONT_SIZE))
         self._lower_text.setColor(color if isinstance(color, QColor) else self._grid_color)
         self._lower_text.setRenderFlags(Qt.AlignLeft)
         self._lower_text_marker = QwtPlotMarker()
@@ -514,7 +514,7 @@ class IvcViewer(QwtPlot):
             action_add_cursor.triggered.connect(partial(self.add_cursor, pos))
             menu.addAction(action_add_cursor)
             if not self.cursors.is_empty():
-                if self.cursors.find_cursor_for_context_menu(self._transform_point_coordinates(pos)):
+                if self.cursors.find_cursor_for_context_menu(pos):
                     action_remove_cursor = QAction(QIcon(os.path.join(media_dir, "remove_cursor.png")),
                                                    self._get_item_label("remove_cursor"), menu)
                     action_remove_cursor.triggered.connect(self.remove_cursor)

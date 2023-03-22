@@ -1,6 +1,6 @@
 from typing import List, Optional, Union
 import numpy as np
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QPoint, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QPen
 from qwt import QwtPlot, QwtPlotCurve, QwtPlotMarker, QwtText
 from ivviewer.curve import Point
@@ -118,6 +118,11 @@ class IvcCursor:
         self._cross_x.detach()
         self._cross_y.detach()
 
+    def get_cursor_coordinates_in_px(self) -> QPoint:
+        x = self._ivc_viewer.transform(QwtPlot.xBottom, self.x) + self._ivc_viewer.canvas().x()
+        y = self._ivc_viewer.transform(QwtPlot.yLeft, self.y) + self._ivc_viewer.canvas().y()
+        return QPoint(x, y)
+
     def move(self, pos: Point) -> None:
         self.x, self.y = pos.x, pos.y
         self._x_axis.setData((pos.x, pos.x), (-self._ivc_viewer.y_scale, self._ivc_viewer.y_scale))
@@ -166,9 +171,9 @@ class IvcCursors:
     This class is array of objects of class IvcCursor.
     """
 
-    K_RADIUS: float = 0.2  # coefficient of radius of action to select cursor
     COLOR_FOR_REST: QColor = QColor(102, 255, 0)
     COLOR_FOR_SELECTED: QColor = QColor(255, 0, 0)
+    DISTANCE_FOR_SELECTION: int = 3
 
     def __init__(self, ivc_viewer: QwtPlot, font: QFont = None, color_for_rest: QColor = None,
                  color_for_selected: QColor = None, x_label: str = None, y_label: str = None, accuracy: int = None
@@ -198,18 +203,21 @@ class IvcCursors:
     def cursors(self) -> List[IvcCursor]:
         return self._cursors
 
-    def _find_cursor_at_point(self, pos: Point) -> Optional[int]:
-        """
-        Method finds cursor at given point.
-        :param pos: point.
-        :return: index of cursor.
-        """
+    def _find_cursor_at_point(self, pos: QPoint) -> Optional[int]:
 
-        width, height = self._ivc_viewer.get_minor_axis_step()
-        for cursor in self._cursors:
-            if np.abs(cursor.x - pos.x) < self.K_RADIUS * width and np.abs(cursor.y - pos.y) < self.K_RADIUS * height:
-                return self._cursors.index(cursor)
-        return None
+        def get_distance(pos_1: QPoint, pos_2: QPoint) -> float:
+            return np.sqrt((pos_1.x() - pos_2.x())**2 + (pos_1.y() - pos_2.y())**2)
+
+        min_distance = None
+        cursor_index = None
+        for index, cursor in enumerate(self._cursors):
+            cursor_pos = cursor.get_cursor_coordinates_in_px()
+            distance = get_distance(pos, cursor_pos)
+            if distance <= self.DISTANCE_FOR_SELECTION:
+                if min_distance is None or min_distance > distance:
+                    min_distance = distance
+                    cursor_index = index
+        return cursor_index
 
     def add_cursor(self, pos: Point) -> None:
         """
@@ -243,7 +251,7 @@ class IvcCursors:
 
         _ = [cursor.detach() for cursor in self._cursors]
 
-    def find_cursor_for_context_menu(self, pos: Point) -> bool:
+    def find_cursor_for_context_menu(self, pos: QPoint) -> bool:
         """
         Method finds cursor at given point for context menu work.
         :param pos: point next to which you want to search for the cursor.
@@ -318,11 +326,6 @@ class IvcCursors:
             self._y_label = y_label
         _ = [cursor.set_axis_labels(self._x_label, self._y_label) for cursor in self._cursors]
 
-    def set_current_cursor(self, pos: Point) -> None:
-        """
-        Method finds cursor at given point.
-        :param pos: position near which you want to find cursor.
-        """
-
+    def set_current_cursor(self, pos: QPoint) -> None:
         self._current_index = self._find_cursor_at_point(pos)
         self.paint_current_cursor()
