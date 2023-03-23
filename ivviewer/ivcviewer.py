@@ -7,7 +7,7 @@ import numpy as np
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPoint, Qt
 from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
-from qwt import QwtLegend, QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotItem, QwtPlotMarker, QwtText
+from qwt import QwtLegend, QwtPlot, QwtPlotGrid, QwtPlotMarker, QwtText
 from ivviewer.cursor import IvcCursor, IvcCursors
 from ivviewer.curve import Curve, PlotCurve, Point
 
