@@ -87,13 +87,16 @@ class IvcViewer(QwtPlot):
         self._y_scale: float = None
         # X Axis
         axis_pen = QPen(QBrush(self._grid_color), 2)
+        self._xy_axis: QwtPlotMarker = QwtPlotMarker()
+        self._xy_axis.setLinePen(axis_pen)
+        self._xy_axis.setLineStyle(QwtPlotMarker.Cross)
+        self._xy_axis.setValue(0, 0)
+        self._xy_axis.setZ(0)
+        self._xy_axis.attach(self)
+
         self._x_label: str = x_label
         self._x_title: str = x_title if x_title is not None else self.DEFAULT_X_TITLE
         self._x_unit: str = x_unit if x_unit is not None else self.DEFAULT_X_UNIT
-        self.x_axis: QwtPlotCurve = QwtPlotCurve()
-        self.x_axis.setItemAttribute(QwtPlotItem.Legend, False)
-        self.x_axis.setPen(axis_pen)
-        self.x_axis.attach(self)
         self.setAxisFont(QwtPlot.xBottom, self._axis_font)
         self.setAxisMaxMajor(QwtPlot.xBottom, 5)
         self.setAxisMaxMinor(QwtPlot.xBottom, 5)
@@ -101,10 +104,6 @@ class IvcViewer(QwtPlot):
         self._y_label: str = y_label
         self._y_title: str = y_title if y_title is not None else self.DEFAULT_Y_TITLE
         self._y_unit: str = y_unit if y_unit is not None else self.DEFAULT_Y_UNIT
-        self.y_axis: QwtPlotCurve = QwtPlotCurve()
-        self.y_axis.setItemAttribute(QwtPlotItem.Legend, False)
-        self.y_axis.setPen(axis_pen)
-        self.y_axis.attach(self)
         self.setAxisFont(QwtPlot.yLeft, self._axis_font)
         self.setAxisMaxMajor(QwtPlot.yLeft, 5)
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
@@ -151,8 +150,6 @@ class IvcViewer(QwtPlot):
         y_scale = self.y_scale
         self.setAxisScale(QwtPlot.xBottom, -x_scale, x_scale)
         self.setAxisScale(QwtPlot.yLeft, -y_scale, y_scale)
-        self.x_axis.setData((-self.x_scale, self.x_scale), (0, 0))
-        self.y_axis.setData((0, 0), (-self.y_scale, self.y_scale))
         self._update_align_lower_text(x_scale, y_scale)
 
     def _get_default_path(self, file_base_name: str, extension: str) -> str:
@@ -235,8 +232,7 @@ class IvcViewer(QwtPlot):
             self._center_text_marker = None
             self._center_text = None
             self.__grid.attach(self)
-            self.x_axis.attach(self)
-            self.y_axis.attach(self)
+            self._xy_axis.attach(self)
             _ = [curve.attach(self) for curve in self.curves]
             self.cursors.attach(self)
 
@@ -421,8 +417,7 @@ class IvcViewer(QwtPlot):
             return
         self.clear_center_text()  # clear current text
         self.__grid.detach()
-        self.x_axis.detach()
-        self.y_axis.detach()
+        self._xy_axis.detach()
         self.cursors.detach()
         _ = [curve.detach() for curve in self.curves]
 
