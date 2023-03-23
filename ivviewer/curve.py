@@ -26,19 +26,18 @@ class PlotCurve(QwtPlotCurve, QObject):
     DEFAULT_WIDTH: float = 4
     curve_changed: pyqtSignal = pyqtSignal()
 
-    def __init__(self, ivc_viewer: QwtPlot, parent=None, label: Optional[str] = None) -> None:
+    def __init__(self, ivc_viewer: QwtPlot, parent=None, title: Optional[str] = None) -> None:
         """
         :param ivc_viewer: plot on which to place curve;
         :param parent:
-        :param label: name for curve.
+        :param title: curve title (displayed in plot legend).
         """
 
-        QwtPlotCurve.__init__(self, parent)
+        QwtPlotCurve.__init__(self, title)
         QObject.__init__(self)
         self._curve: Optional[Curve] = None
         self._ivc_viewer: QwtPlot = ivc_viewer
         self._parent = parent
-        self.label: Optional[str] = label
 
     @property
     def curve(self) -> Optional[Curve]:

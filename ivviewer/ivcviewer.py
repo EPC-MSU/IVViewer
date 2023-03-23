@@ -7,7 +7,7 @@ import numpy as np
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPoint, Qt
 from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
-from qwt import QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotMarker, QwtText
+from qwt import QwtLegend, QwtPlot, QwtPlotCurve, QwtPlotGrid, QwtPlotItem, QwtPlotMarker, QwtText
 from ivviewer.cursor import IvcCursor, IvcCursors
 from ivviewer.curve import Curve, PlotCurve, Point
 
@@ -91,6 +91,7 @@ class IvcViewer(QwtPlot):
         self._x_title: str = x_title if x_title is not None else self.DEFAULT_X_TITLE
         self._x_unit: str = x_unit if x_unit is not None else self.DEFAULT_X_UNIT
         self.x_axis: QwtPlotCurve = QwtPlotCurve()
+        self.x_axis.setItemAttribute(QwtPlotItem.Legend, False)
         self.x_axis.setPen(axis_pen)
         self.x_axis.attach(self)
         self.setAxisFont(QwtPlot.xBottom, self._axis_font)
@@ -101,6 +102,7 @@ class IvcViewer(QwtPlot):
         self._y_title: str = y_title if y_title is not None else self.DEFAULT_Y_TITLE
         self._y_unit: str = y_unit if y_unit is not None else self.DEFAULT_Y_UNIT
         self.y_axis: QwtPlotCurve = QwtPlotCurve()
+        self.y_axis.setItemAttribute(QwtPlotItem.Legend, False)
         self.y_axis.setPen(axis_pen)
         self.y_axis.attach(self)
         self.setAxisFont(QwtPlot.yLeft, self._axis_font)
@@ -206,8 +208,14 @@ class IvcViewer(QwtPlot):
         self.cursors.add_cursor(pos)
         self.cursors.check_points()
 
-    def add_curve(self) -> PlotCurve:
-        curve = PlotCurve(self)
+    def add_curve(self, title: str = None) -> PlotCurve:
+        """
+        :param title: curve title.
+        """
+
+        if title is None:
+            title = f"curve #{len(self.curves) + 1}"
+        curve = PlotCurve(self, title=title)
         curve.set_curve_params(QColor(255, 0, 0, 200))
         curve.attach(self)
         curve.curve_changed.connect(self.curve_changed.emit)
@@ -296,7 +304,7 @@ class IvcViewer(QwtPlot):
         with open(file_name, "w") as file:
             for index, curve in enumerate(self.curves, start=1):
                 if curve is not None and not curve.is_empty():
-                    print_to_file(file, curve.label if curve.label else index, curve.curve)
+                    print_to_file(file, curve.title if curve.title else index, curve.curve)
 
     def get_list_of_all_cursors(self) -> List[IvcCursor]:
         """
@@ -534,3 +542,10 @@ class IvcViewer(QwtPlot):
                 action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
                 menu.addAction(action_remove_all_cursors)
         menu.popup(self.mapToGlobal(pos))
+
+    def show_legend(self) -> None:
+        """
+        Method displays legend for curves in plot.
+        """
+
+        self.insertLegend(QwtLegend(), QwtPlot.BottomLegend)

@@ -19,15 +19,17 @@ if __name__ == "__main__":
     # Add three curves
     x_test = [-2.5, 0, 2.5]
     y_test = [-0.005, 0, 0.005]
-    test_curve = window.plot.add_curve()
+    test_curve = window.plot.add_curve("Test curve")
     test_curve.set_curve(Curve(x_test, y_test))
     test_curve.set_curve_params(QColor("red"))
 
     x_ref = [-2.5, 0, 2.5]
     y_ref = [-0.003, 0, 0.0033]
-    reference_curve = window.plot.add_curve()
+    reference_curve = window.plot.add_curve("Reference curve")
     reference_curve.set_curve(Curve(x_ref, y_ref))
     reference_curve.set_curve_params(QColor("green"))
+
+    window.plot.show_legend()
 
     window.resize(600, 600)
     window.show()
