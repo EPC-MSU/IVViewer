@@ -1,18 +1,19 @@
 from typing import List, Optional, Union
 import numpy as np
-from PyQt5.QtCore import QPoint, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QPen
-from qwt import QwtPlot, QwtPlotCurve, QwtPlotMarker, QwtText
+from PyQt5.QtCore import QPoint, QPointF, Qt
+from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QPainter
+from qwt import QwtPlot, QwtPlotMarker, QwtText
 from ivviewer.curve import Point
 
 
-class IvcCursor:
+class IvcCursor(QwtPlotMarker):
     """
     This class is cursor with horizontal and vertical lines, it shows coordinates for selected point.
     """
 
     CROSS_SIZE: int = 10  # default size of white cross in px
     DEFAULT_FONT_SIZE: int = 10
+    DEFAULT_PEN_WIDTH: int = 2
     DEFAULT_X_LABEL: str = "U"
     DEFAULT_Y_LABEL: str = "I"
 
@@ -27,39 +28,45 @@ class IvcCursor:
         :param accuracy: the accuracy with which you want to display coordinate values on cursor.
         """
 
+        super().__init__()
         self._accuracy: int = accuracy
-        self._font: QFont = font if isinstance(font, QFont) else QFont("", self.DEFAULT_FONT_SIZE)
+        self._font: QFont = font if isinstance(font, QFont) else QFont("", IvcCursor.DEFAULT_FONT_SIZE)
         self._ivc_viewer: QwtPlot = ivc_viewer
-        self._x_label: str = x_label if x_label else self.DEFAULT_X_LABEL
-        self._y_label: str = y_label if y_label else self.DEFAULT_Y_LABEL
-
-        self.x: float = None
-        self.y: float = None
-        self._x_axis: QwtPlotCurve = QwtPlotCurve()
-        self._y_axis: QwtPlotCurve = QwtPlotCurve()
+        self._pen_for_cross: QPen = QPen(QBrush(QColor(255, 255, 255)), IvcCursor.DEFAULT_PEN_WIDTH)
+        self._x_label: str = x_label if x_label else IvcCursor.DEFAULT_X_LABEL
+        self._y_label: str = y_label if y_label else IvcCursor.DEFAULT_Y_LABEL
 
         cursor_text = QwtText()
         cursor_text.setFont(self._font)
         cursor_text.setRenderFlags(Qt.AlignLeft)
         self._marker: QwtPlotMarker = QwtPlotMarker()
-        self._marker.setSpacing(10)
-        self._marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
-        self._marker.setLabel(cursor_text)
-
-        self._cross_x = QwtPlotCurve()
-        self._cross_y = QwtPlotCurve()
-
+        self.setSpacing(5)
+        self.setLineStyle(QwtPlotMarker.Cross)
+        self.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        self.setLabel(cursor_text)
         self.move(pos)
 
     @property
     def cursor_text(self) -> str:
         if self._accuracy is not None:
-            x_value = format(self.x, f".{self._accuracy}f")
-            y_value = format(self.y, f".{self._accuracy}f")
+            x_value = format(self.value().x(), f".{self._accuracy}f")
+            y_value = format(self.value().x(), f".{self._accuracy}f")
         else:
-            x_value = self.x
-            y_value = self.y
+            x_value = self.value().x()
+            y_value = self.value().y()
         return "{} = {}, {} = {}".format(self._x_label, x_value, self._y_label, y_value)
+
+    def _draw_cross(self, painter: QPainter, pos: QPointF) -> None:
+        painter.setPen(self._pen_for_cross)
+        painter.setRenderHint(QPainter.Antialiasing, False)
+        x_1 = pos.x() - IvcCursor.CROSS_SIZE
+        x_2 = pos.x() + IvcCursor.CROSS_SIZE
+        y = pos.y()
+        painter.drawLine(x_1, y, x_2, y)
+        x = pos.x()
+        y_1 = pos.y() - IvcCursor.CROSS_SIZE
+        y_2 = pos.y() + IvcCursor.CROSS_SIZE
+        painter.drawLine(x, y_1, x, y_2)
 
     @staticmethod
     def _get_color(param: Union[QBrush, QColor, QPen]) -> QColor:
@@ -74,84 +81,70 @@ class IvcCursor:
         return color
 
     @staticmethod
+    def _get_brush(param: Union[QBrush, QColor, QPen]) -> QBrush:
+        if isinstance(param, QColor):
+            brush = QBrush(param)
+        elif isinstance(param, QBrush):
+            brush = param
+        elif isinstance(param, QPen):
+            brush = param.brush()
+        else:
+            raise TypeError("Invalid type of argument passed. Allowed types: QBrush, QColor and QPen")
+        return brush
+
+    @staticmethod
     def _get_pen(param: Union[QBrush, QColor, QPen]) -> QPen:
         if isinstance(param, QColor):
-            pen = QPen(QBrush(param), 2, Qt.DotLine)
+            pen = QPen(QBrush(param), IvcCursor.DEFAULT_PEN_WIDTH, Qt.DotLine)
         elif isinstance(param, QBrush):
-            pen = QPen(param, 2, Qt.DotLine)
+            pen = QPen(param, IvcCursor.DEFAULT_PEN_WIDTH, Qt.DotLine)
         elif isinstance(param, QPen):
             pen = param
         else:
             raise TypeError("Invalid type of argument passed. Allowed types: QBrush, QColor and QPen")
         return pen
 
-    def _set_cross_xy(self) -> None:
-        """
-        Method calculates sizes and position of white cross of marker.
-        """
-
-        x = self._ivc_viewer.transform(QwtPlot.xBottom, self.x)
-        x_1 = self._ivc_viewer.invTransform(QwtPlot.xBottom, x - self.CROSS_SIZE)
-        x_2 = self._ivc_viewer.invTransform(QwtPlot.xBottom, x + self.CROSS_SIZE)
-        y = self._ivc_viewer.transform(QwtPlot.yLeft, self.y)
-        y_1 = self._ivc_viewer.invTransform(QwtPlot.yLeft, y - self.CROSS_SIZE)
-        y_2 = self._ivc_viewer.invTransform(QwtPlot.yLeft, y + self.CROSS_SIZE)
-        self._cross_x.setData((x_1, x_2), (self.y, self.y))
-        self._cross_y.setData((self.x, self.x), (y_1, y_2))
-
     def attach(self, ivc_viewer: QwtPlot) -> None:
         self._ivc_viewer = ivc_viewer
-        self._x_axis.attach(self._ivc_viewer)
-        self._y_axis.attach(self._ivc_viewer)
-        self._marker.attach(self._ivc_viewer)
-        self._cross_x.attach(self._ivc_viewer)
-        self._cross_y.attach(self._ivc_viewer)
+        super().attach(self._ivc_viewer)
 
-    def check_point(self) -> None:
-        self.x = self._marker.value().x()
-        self.y = self._marker.value().y()
+    def draw(self, painter, xMap, yMap, canvasRect) -> None:
+        """
+        Draw the marker.
+        :param QPainter painter: Painter
+        :param qwt.scale_map.QwtScaleMap xMap: x Scale Map
+        :param qwt.scale_map.QwtScaleMap yMap: y Scale Map
+        :param QRectF canvasRect: Contents rectangle of the canvas in painter coordinates
+        """
 
-    def detach(self) -> None:
-        self._x_axis.detach()
-        self._y_axis.detach()
-        self._marker.detach()
-        self._cross_x.detach()
-        self._cross_y.detach()
+        data = self._QwtPlotMarker__data
+        pos = QPointF(xMap.transform(data.xValue), yMap.transform(data.yValue))
+        self.drawLines(painter, canvasRect, pos)
+        self._draw_cross(painter, pos)
+        self.drawLabel(painter, canvasRect, pos)
 
     def get_cursor_coordinates_in_px(self) -> QPoint:
-        x = self._ivc_viewer.transform(QwtPlot.xBottom, self.x) + self._ivc_viewer.canvas().x()
-        y = self._ivc_viewer.transform(QwtPlot.yLeft, self.y) + self._ivc_viewer.canvas().y()
+        x = self._ivc_viewer.transform(QwtPlot.xBottom, self.value().x()) + self._ivc_viewer.canvas().x()
+        y = self._ivc_viewer.transform(QwtPlot.yLeft, self.value().y()) + self._ivc_viewer.canvas().y()
         return QPoint(x, y)
 
     def move(self, pos: Point) -> None:
-        self.x, self.y = pos.x, pos.y
-        self._x_axis.setData((pos.x, pos.x), (-self._ivc_viewer.y_scale, self._ivc_viewer.y_scale))
-        self._y_axis.setData((-self._ivc_viewer.x_scale, self._ivc_viewer.x_scale), (pos.y, pos.y))
-        self._marker.setValue(pos.x, pos.y)
-        self._marker.label().setText(self.cursor_text)
-        self._set_cross_xy()
+        self.setValue(pos.x, pos.y)
+        self.label().setText(self.cursor_text)
 
-    def paint(self, param: Union[QBrush, QColor, QPen], param_for_cross: Optional[Union[QBrush, QColor, QPen]] = None
-              ) -> None:
+    def paint(self, param: Union[QBrush, QColor, QPen], param_for_cross: Union[QBrush, QColor, QPen] = None) -> None:
         """
         Method draws all parts of cursor with given color, brush or pen.
         :param param: brush, color or pen for cursor;
-        :param param_for_cross: brush, color or pen for cross in the center of cursor.
+        :param param_for_cross: brush, color or pen for cross in the cursor center.
         """
 
         color = self._get_color(param)
-        self._marker.label().setColor(color)
+        self.label().setColor(color)
         pen = self._get_pen(param)
-        self._x_axis.setPen(pen)
-        self._y_axis.setPen(pen)
-
-        if not isinstance(param_for_cross, (QBrush, QColor, QPen)):
-            pen_for_cross = QPen(QBrush(QColor(255, 255, 255)), 2, Qt.SolidLine)
-        else:
-            pen_for_cross = self._get_pen(param_for_cross)
-        self._cross_x.setPen(pen_for_cross)
-        self._cross_y.setPen(pen_for_cross)
-        self._set_cross_xy()
+        self.setLinePen(pen)
+        if param_for_cross:
+            self._pen_for_cross = self._get_pen(param_for_cross)
 
     def set_axis_labels(self, x_label: str, y_label: str) -> None:
         """
@@ -163,7 +156,7 @@ class IvcCursor:
             self._x_label = x_label
         if y_label:
             self._y_label = y_label
-        self._marker.label().setText(self.cursor_text)
+        self.label().setText(self.cursor_text)
 
 
 class IvcCursors:
@@ -240,9 +233,6 @@ class IvcCursors:
 
         self._ivc_viewer = ivc_viewer
         _ = [cursor.attach(ivc_viewer) for cursor in self._cursors]
-
-    def check_points(self) -> None:
-        _ = [cursor.check_point() for cursor in self._cursors]
 
     def detach(self) -> None:
         """

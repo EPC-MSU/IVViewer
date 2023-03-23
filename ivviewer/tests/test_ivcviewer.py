@@ -207,4 +207,4 @@ class TestViewer:
 
         with open(os.path.join(dir_to_export, file_name), "r") as file:
             content = file.read()
-        assert content == "\n1 curve:\nВ, А\n-2.5, -0.005\n2.5, 0.005\n"
+        assert content == "\ncurve #1:\nВ, А\n-2.5, -0.005\n2.5, 0.005\n"

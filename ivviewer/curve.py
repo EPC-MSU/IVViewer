@@ -47,6 +47,10 @@ class PlotCurve(QwtPlotCurve, QObject):
     def curve(self, curve: Optional[Curve]) -> None:
         self.set_curve(curve)
 
+    @property
+    def curve_title(self) -> str:
+        return self.title().text()
+
     def _set_curve(self, curve: Optional[Curve] = None) -> None:
         self._curve = curve
         _plot_curve(self)

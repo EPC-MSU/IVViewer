@@ -206,7 +206,6 @@ class IvcViewer(QwtPlot):
 
         pos = self._transform_point_coordinates(position)
         self.cursors.add_cursor(pos)
-        self.cursors.check_points()
 
     def add_curve(self, title: str = None) -> PlotCurve:
         """
@@ -283,7 +282,7 @@ class IvcViewer(QwtPlot):
         """
 
         def print_to_file(file_, curve_label: str, curve_: Curve) -> None:
-            print(f"\n{curve_label} curve:", file=file_)
+            print(f"\n{curve_label}:", file=file_)
             print(f"{self._x_unit}, {self._y_unit}", file=file_)
             for voltage, current in zip(curve_.voltages, curve_.currents):
                 print(f"{voltage}, {current}", file=file_)
@@ -304,7 +303,7 @@ class IvcViewer(QwtPlot):
         with open(file_name, "w") as file:
             for index, curve in enumerate(self.curves, start=1):
                 if curve is not None and not curve.is_empty():
-                    print_to_file(file, curve.title if curve.title else index, curve.curve)
+                    print_to_file(file, curve.curve_title, curve.curve)
 
     def get_list_of_all_cursors(self) -> List[IvcCursor]:
         """
@@ -361,7 +360,6 @@ class IvcViewer(QwtPlot):
                 self.cursors.add_cursor(pos)
             elif self._remove_cursor_mode:
                 self.cursors.remove_current_cursor()
-            self.cursors.check_points()
         event.accept()
 
     def redraw_cursors(self) -> None:

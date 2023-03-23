@@ -95,8 +95,8 @@ class TestCursor:
         current_cursor = window.plot.get_list_of_all_cursors()[current_index]
         window.setToolTip(f"Должно быть две метки. Активная метка (красная) должна находиться в точке ({x_to_move}, "
                           f"{y_to_move})")
-        assert current_cursor.x == x_to_move
-        assert current_cursor.y == y_to_move
+        assert current_cursor.value().x() == x_to_move
+        assert current_cursor.value().y() == y_to_move
 
     def test_7_set_colors_for_cursors(self, display_window: bool) -> None:
         """
@@ -113,8 +113,8 @@ class TestCursor:
         cursors = window.plot.get_list_of_all_cursors()
         assert len(cursors) == 2
         assert window.plot.cursors._current_index == 1
-        assert cursors[0]._x_axis.pen().color() == window.plot.cursors._color_for_rest
-        assert cursors[1]._x_axis.pen().color() == window.plot.cursors._color_for_selected
+        assert cursors[0].linePen().color() == window.plot.cursors._color_for_rest
+        assert cursors[1].linePen().color() == window.plot.cursors._color_for_selected
         if display_window:
             window.show()
             app.exec()
