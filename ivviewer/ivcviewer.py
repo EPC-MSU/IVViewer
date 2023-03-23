@@ -392,14 +392,16 @@ class IvcViewer(QwtPlot):
             options["options"] = QFileDialog.DontUseNativeDialog
         if ask_where_to_save:
             file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"), default_file_name,
-                                                    "Images (*.png)", **options)[0]
+                                                    "Images (*.png *.jpg *.bmp *.pdf *.svg)", **options)[0]
         else:
             file_name = default_file_name
         if not file_name:
             return
-        if not file_name.endswith(".png"):
+        extensions = ".png", ".jpg", ".bmp", ".pdf", ".svg"
+        extension = os.path.splitext(file_name)[1]
+        if extension not in extensions:
             file_name += ".png"
-        self.grab().save(file_name)
+        self.exportTo(file_name)
 
     def set_center_text(self, text: str, font: QFont = None, color: QColor = None) -> None:
         """
