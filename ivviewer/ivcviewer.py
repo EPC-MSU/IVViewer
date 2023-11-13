@@ -536,9 +536,13 @@ class IvcViewer(QwtPlot):
                 menu.addAction(action_remove_all_cursors)
         menu.popup(self.mapToGlobal(pos))
 
-    def show_legend(self) -> None:
+    def show_legend(self, legend_font: QFont = None) -> None:
         """
         Method displays legend for curves in plot.
+        :param legend_font:
         """
 
-        self.insertLegend(QwtLegend(), QwtPlot.BottomLegend)
+        legend = QwtLegend()
+        if isinstance(legend_font, QFont):
+            legend.setFont(legend_font)
+        self.insertLegend(legend, QwtPlot.TopLegend)
