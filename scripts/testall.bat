@@ -1,4 +1,3 @@
-@echo off
 cd ..
 setlocal EnableDelayedExpansion
 if exist venv rd /s/q venv
