@@ -7,7 +7,7 @@
 Установка возможна только на python версии 3.6!
 
 ```bash
-python3.6 -m pip install ivviewer
+python -m pip install ivviewer
 ```
 
 # Проверка установки

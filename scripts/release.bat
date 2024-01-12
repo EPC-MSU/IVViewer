@@ -1,4 +1,5 @@
-@echo on
+@echo off
+cd ..
 setlocal enableextensions
 
 if defined TWINE_USERNAME (echo found username) else (exit)
@@ -13,7 +14,6 @@ md src
 xcopy /i /s /e /h /y .\ivviewer .\src\ivviewer
 
 python -m venv build-venv
-
 build-venv\Scripts\python -m pip install --upgrade pip
 build-venv\Scripts\python -m pip install build
 build-venv\Scripts\python -m build

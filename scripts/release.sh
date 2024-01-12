@@ -1,5 +1,6 @@
 : "${TWINE_USERNAME:?TWINE_USERNAME empty, exiting}"
 : "${TWINE_PASSWORD:?TWINE_PASSWORD empty, exiting}"
+cd ..
 
 [ -d "./dist" ] && rm -rf ./dist
 [ -d "./src" ] && rm -rf ./src
