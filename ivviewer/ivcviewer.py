@@ -642,6 +642,8 @@ class IvcViewer(QwtPlot):
         """
 
         self._add_cursor_mode = state
+        if state:
+            self.set_state_removing_cursor(False)
 
     def set_state_removing_cursor(self, state: bool) -> None:
         """
@@ -650,6 +652,8 @@ class IvcViewer(QwtPlot):
         """
 
         self._remove_cursor_mode = state
+        if state:
+            self.set_state_adding_cursor(False)
 
     def set_x_axis_title(self, title: str, label: str = None) -> None:
         """
