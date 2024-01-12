@@ -485,14 +485,16 @@ class IvcViewer(QwtPlot):
         event_pos = event.pos()
         if event.button() == Qt.LeftButton and not self._center_text_marker:
             self.cursors.set_current_cursor(event_pos)
-            if self._add_cursor_mode:
+            cursor_under_mouse = self._check_cursor_under_mouse(event_pos)
+            if self._add_cursor_mode and not cursor_under_mouse:
                 pos = self._transform_point_coordinates(event_pos)
                 self.cursors.add_cursor(pos)
             elif self._remove_cursor_mode:
                 self.cursors.remove_current_cursor()
-            if self._check_cursor_under_mouse(event_pos):
+
+            if cursor_under_mouse:
                 self._left_button_pressed = True
-                self._change_mouse_cursor()
+            self._change_mouse_cursor()
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
