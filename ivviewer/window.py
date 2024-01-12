@@ -4,6 +4,9 @@ from ivviewer.ivcviewer import IvcViewer
 
 
 class Viewer(QWidget):
+    """
+    Widget class for displaying graphs.
+    """
 
     def __init__(self, parent=None, solid_axis_enabled: bool = True, grid_color: QColor = None,
                  back_color: QColor = None, text_color: QColor = None, color_for_rest_cursors: QColor = None,
@@ -43,4 +46,8 @@ class Viewer(QWidget):
 
     @property
     def plot(self) -> IvcViewer:
+        """
+        :return: an object that needs to be directly manipulated to add and display graphs.
+        """
+
         return self._plot

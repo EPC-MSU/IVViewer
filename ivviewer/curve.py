@@ -29,7 +29,7 @@ class PlotCurve(QwtPlotCurve, QObject):
     def __init__(self, ivc_viewer: QwtPlot, parent=None, title: Optional[str] = None) -> None:
         """
         :param ivc_viewer: plot on which to place curve;
-        :param parent:
+        :param parent: parent object;
         :param title: curve title (displayed in plot legend).
         """
 
@@ -41,17 +41,33 @@ class PlotCurve(QwtPlotCurve, QObject):
 
     @property
     def curve(self) -> Optional[Curve]:
+        """
+        :return: object with lists of voltage and current values.
+        """
+
         return self._curve
 
     @curve.setter
     def curve(self, curve: Optional[Curve]) -> None:
+        """
+        :param curve: object with lists of new voltage and current values.
+        """
+
         self.set_curve(curve)
 
     @property
     def curve_title(self) -> str:
+        """
+        :return: curve title.
+        """
+
         return self.title().text()
 
     def _set_curve(self, curve: Optional[Curve] = None) -> None:
+        """
+        :param curve: object with lists of new voltage and current values.
+        """
+
         self._curve = curve
         _plot_curve(self)
 
@@ -59,6 +75,10 @@ class PlotCurve(QwtPlotCurve, QObject):
         self.set_curve(None)
 
     def get_curve(self) -> Optional[Curve]:
+        """
+        :return: object with lists of voltage and current values.
+        """
+
         return self._curve
 
     def is_empty(self) -> bool:
@@ -69,6 +89,10 @@ class PlotCurve(QwtPlotCurve, QObject):
         return not self._curve
 
     def set_curve(self, curve: Optional[Curve]) -> None:
+        """
+        :param curve: object with lists of new voltage and current values.
+        """
+
         self._set_curve(curve)
         self._ivc_viewer._adjust_scale()
         self.curve_changed.emit()

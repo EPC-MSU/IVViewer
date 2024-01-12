@@ -117,8 +117,8 @@ class IvcViewer(QwtPlot):
         self.curves: List[PlotCurve] = []
         self._center_text: QwtText = None
         self._center_text_marker: QwtPlotMarker = None
-        self._lower_text = None
-        self._lower_text_marker = None
+        self._lower_text: QwtText = None
+        self._lower_text_marker: QwtPlotMarker = None
 
         self._add_cursor_mode: bool = False
         self._remove_cursor_mode: bool = False
@@ -134,18 +134,31 @@ class IvcViewer(QwtPlot):
             "remove_cursor": {"default": "Удалить метку"},
             "save_screenshot": {"default": "Сохранить изображение"},
         }
+        self._left_button_pressed: bool = False
         self._set_axis_titles()
         self._adjust_scale()
 
     @property
     def x_scale(self) -> float:
+        """
+        :return: maximum value (scale) along horizontal X axis.
+        """
+
         return self._get_scale(self._x_scale, self._min_border_x)
 
     @property
     def y_scale(self) -> float:
+        """
+        :return: maximum value (scale) along horizontal Y axis.
+        """
+
         return self._get_scale(self._y_scale, self._min_border_y)
 
     def _adjust_scale(self) -> None:
+        """
+        Method disables autoscaling and specifies a fixed scales for axes.
+        """
+
         x_scale = self.x_scale
         y_scale = self.y_scale
         self.setAxisScale(QwtPlot.xBottom, -x_scale, x_scale)
@@ -153,22 +166,41 @@ class IvcViewer(QwtPlot):
         self._update_align_lower_text(x_scale, y_scale)
 
     def _get_default_path(self, file_base_name: str, extension: str) -> str:
+        """
+        :param file_base_name: main file name;
+        :param extension: file extension.
+        :return: default file path.
+        """
+
         file_name = file_base_name + "_" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + extension
         if not os.path.isdir(self._dir_path):
             os.makedirs(self._dir_path)
         return os.path.join(self._dir_path, file_name)
 
     def _get_item_label(self, item_name: str) -> str:
+        """
+        :param item_name: context menu item.
+        :return: text for the context menu item.
+        """
+
         item = self._items_for_localization.get(item_name, {})
         translation = item.get("translation", None)
         if translation is not None:
             return translation
+
         return item.get("default", "")
 
     @staticmethod
     def _get_scale(scale: float, min_border: float) -> float:
+        """
+        :param scale: scale;
+        :param min_border: minimum acceptable axis scale.
+        :return: permissible axis scale.
+        """
+
         if isinstance(scale, (float, int)) and abs(scale) > abs(min_border):
             return abs(scale)
+
         return abs(min_border)
 
     def _set_axis_titles(self) -> None:
@@ -183,6 +215,12 @@ class IvcViewer(QwtPlot):
         self.cursors.set_axis_labels(self._x_label, self._y_label)
 
     def _transform_point_coordinates(self, pos: QPoint) -> Point:
+        """
+        Method transforms the coordinates of a position in the drawing region into a
+        :param pos: coordinates of a position in the drawing region.
+        :return: transformed position at axes coordinates.
+        """
+
         pos_x = pos.x() - self.canvas().x()
         pos_y = pos.y() - self.canvas().y()
         x = np.round(self.invTransform(QwtPlot.xBottom, pos_x), 2)
@@ -190,8 +228,15 @@ class IvcViewer(QwtPlot):
         return Point(x, y)
 
     def _update_align_lower_text(self, x_scale: float, y_scale: float) -> None:
+        """
+        Method updates the position of the text at the bottom of the widget.
+        :param x_scale: new X scale value;
+        :param y_scale: new Y scale value.
+        """
+
         if not self._lower_text:
             return
+
         self._lower_text_marker.setValue(-x_scale, -y_scale)
 
     @pyqtSlot(QPoint)
@@ -207,6 +252,7 @@ class IvcViewer(QwtPlot):
     def add_curve(self, title: str = None) -> PlotCurve:
         """
         :param title: curve title.
+        :return: added curve.
         """
 
         if title is None:
@@ -224,9 +270,13 @@ class IvcViewer(QwtPlot):
         :return: True if there are non-empty curves.
         """
 
-        return any([not curve.is_empty() for curve in self.curves])
+        return any(not curve.is_empty() for curve in self.curves)
 
     def clear_center_text(self) -> None:
+        """
+        Method removes text from the center of the widget and returns the display of curves and axes.
+        """
+
         if self._center_text_marker:
             self._center_text_marker.detach()
             self._center_text_marker = None
@@ -237,12 +287,20 @@ class IvcViewer(QwtPlot):
             self.cursors.attach(self)
 
     def clear_lower_text(self) -> None:
+        """
+        Method removes text from the bottom of the widget.
+        """
+
         if self._lower_text_marker:
             self._lower_text_marker.detach()
             self._lower_text_marker = None
             self._lower_text = None
 
     def clear_min_borders(self) -> None:
+        """
+        Method removes user-specified minimum acceptable axis scales ​​and restores default values.
+        """
+
         self._min_border_x = abs(float(IvcViewer.MIN_BORDER_X))
         self._min_border_y = abs(float(IvcViewer.MIN_BORDER_Y))
         self._adjust_scale()
@@ -292,12 +350,14 @@ class IvcViewer(QwtPlot):
                                                     "CSV files (*.csv)", **options)[0]
         else:
             file_name = default_file_name
+
         if not file_name:
             return
+
         if not file_name.endswith(".csv"):
             file_name += ".csv"
         with open(file_name, "w") as file:
-            for index, curve in enumerate(self.curves, start=1):
+            for curve in self.curves:
                 if curve is not None and not curve.is_empty():
                     print_to_file(file, curve.curve_title, curve.curve)
 
@@ -310,12 +370,15 @@ class IvcViewer(QwtPlot):
         return self.cursors.cursors
 
     def get_min_borders(self) -> Tuple[float, float]:
+        """
+        :return: minimum acceptable axes scales.
+        """
+
         return self._min_border_x, self._min_border_y
 
     def get_minor_axis_step(self) -> Tuple[float, float]:
         """
-        Method returns width and height of rectangle of minor axes.
-        :return: width and height.
+        :return: width and height of rectangle of minor axes.
         """
 
         x_map = self.__grid.xScaleDiv().ticks(self.__grid.xScaleDiv().MinorTick)
@@ -325,12 +388,24 @@ class IvcViewer(QwtPlot):
         return x_step, y_step
 
     def get_state_adding_cursor(self) -> bool:
+        """
+        :return: True if the widget is in the state of adding cursors when the left mouse button is pressed.
+        """
+
         return self._add_cursor_mode
 
     def get_state_removing_cursor(self) -> bool:
+        """
+        :return: True if the widget is in the state of removing cursors when the left mouse button is pressed.
+        """
+
         return self._remove_cursor_mode
 
     def localize_widget(self, **kwargs) -> None:
+        """
+        :param kwargs: dictionary with translation for context menu items.
+        """
+
         for item_name, item in self._items_for_localization.items():
             item["translation"] = kwargs.get(item_name, None)
 
@@ -340,22 +415,34 @@ class IvcViewer(QwtPlot):
         :param event: mouse move event.
         """
 
-        pos_to_move = self._transform_point_coordinates(event.pos())
-        self.cursors.move_cursor(pos_to_move)
+        if self._left_button_pressed:
+            pos_to_move = self._transform_point_coordinates(event.pos())
+            self.cursors.move_cursor(pos_to_move)
 
-    def mousePressEvent(self, event: QMouseEvent):
+    def mousePressEvent(self, event: QMouseEvent) -> None:
         """
         This event handler receives mouse press events for the widget.
         :param event: mouse press event.
         """
 
         if event.button() == Qt.LeftButton and not self._center_text_marker:
+            self._left_button_pressed = True
             pos = self._transform_point_coordinates(event.pos())
             self.cursors.set_current_cursor(event.pos())
             if self._add_cursor_mode:
                 self.cursors.add_cursor(pos)
             elif self._remove_cursor_mode:
                 self.cursors.remove_current_cursor()
+        event.accept()
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """
+        This event handler receives mouse release events for the widget.
+        :param event: mouse release event.
+        """
+
+        if event.button() == Qt.LeftButton:
+            self._left_button_pressed = False
         event.accept()
 
     def redraw_cursors(self) -> None:
@@ -415,6 +502,7 @@ class IvcViewer(QwtPlot):
         if isinstance(self._center_text, QwtText) and self._center_text == QwtText(text):
             # Same text already here
             return
+
         self.clear_center_text()  # clear current text
         self.__grid.detach()
         self._xy_axis.detach()
@@ -439,6 +527,7 @@ class IvcViewer(QwtPlot):
         if isinstance(self._lower_text, QwtText) and self._lower_text == text:
             # Same text already here
             return
+
         self.clear_lower_text()  # Clear current text
         self._lower_text = QwtText(text)
         self._lower_text.setFont(font if isinstance(font, QFont) else QFont("", self.DEFAULT_LOWER_TEXT_FONT_SIZE))
@@ -452,6 +541,11 @@ class IvcViewer(QwtPlot):
         self._adjust_scale()
 
     def set_min_borders(self, min_x: float, min_y: float) -> None:
+        """
+        :param min_x: minimum acceptable X axis scale;
+        :param min_y: minimum acceptable Y axis scale.
+        """
+
         self._min_border_x = abs(float(min_x))
         self._min_border_y = abs(float(min_y))
         self._adjust_scale()
@@ -467,20 +561,35 @@ class IvcViewer(QwtPlot):
             self._dir_path = dir_path
 
     def set_scale(self, x_scale: float, y_scale: float) -> None:
+        """
+        :param x_scale: X axis scale;
+        :param y_scale: Y axis scale.
+        """
+
         self._x_scale = x_scale
         self._y_scale = y_scale
         self._adjust_scale()
 
     def set_state_adding_cursor(self, state: bool) -> None:
+        """
+        :param state: if True, then a state will be set in which a marker will be added when the left mouse button is
+        pressed.
+        """
+
         self._add_cursor_mode = state
 
     def set_state_removing_cursor(self, state: bool) -> None:
+        """
+        :param state: if True, then a state will be set in which a marker will be removed when the left mouse button is
+        pressed.
+        """
+
         self._remove_cursor_mode = state
 
     def set_x_axis_title(self, title: str, label: str = None) -> None:
         """
-        :param title: title for horizontal axis;
-        :param label: short name for horizontal axis.
+        :param title: title for horizontal X axis;
+        :param label: short name for horizontal X axis.
         """
 
         self._x_title = title
@@ -489,8 +598,8 @@ class IvcViewer(QwtPlot):
 
     def set_y_axis_title(self, title: str, label: str = None) -> None:
         """
-        :param title: title for vertical axis;
-        :param label: short name for vertical axis.
+        :param title: title for vertical Y axis;
+        :param label: short name for vertical Y axis.
         """
 
         self._y_title = title
@@ -506,6 +615,7 @@ class IvcViewer(QwtPlot):
 
         if self._center_text_marker:
             return
+
         non_empty_curves = self.check_non_empty_curves()
         menu = QMenu(self)
         media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media")
@@ -539,7 +649,7 @@ class IvcViewer(QwtPlot):
     def show_legend(self, legend_font: QFont = None) -> None:
         """
         Method displays legend for curves in plot.
-        :param legend_font:
+        :param legend_font: font for legend.
         """
 
         legend = QwtLegend()
