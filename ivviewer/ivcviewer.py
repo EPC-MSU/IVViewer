@@ -489,6 +489,8 @@ class IvcViewer(QwtPlot):
             if self._add_cursor_mode and not cursor_under_mouse:
                 pos = self._transform_point_coordinates(event_pos)
                 self.cursors.add_cursor(pos)
+            elif self._add_cursor_mode and cursor_under_mouse:
+                self._left_button_pressed = True
             elif self._remove_cursor_mode and cursor_under_mouse:
                 self.cursors.remove_current_cursor()
                 self._left_button_pressed = False
