@@ -2,9 +2,9 @@ import os
 import platform
 from datetime import datetime
 from functools import partial
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 import numpy as np
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QPoint, Qt
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QCoreApplication as qApp, QEvent, QObject, QPoint, Qt
 from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtLegend, QwtPlot, QwtPlotGrid, QwtPlotMarker, QwtText
@@ -138,6 +138,11 @@ class IvcViewer(QwtPlot):
         self._set_axis_titles()
         self._adjust_scale()
 
+        self.setMouseTracking(True)
+        canvas = self.canvas()
+        canvas.setMouseTracking(True)
+        canvas.installEventFilter(self)
+
     @property
     def x_scale(self) -> float:
         """
@@ -164,6 +169,28 @@ class IvcViewer(QwtPlot):
         self.setAxisScale(QwtPlot.xBottom, -x_scale, x_scale)
         self.setAxisScale(QwtPlot.yLeft, -y_scale, y_scale)
         self._update_align_lower_text(x_scale, y_scale)
+
+    def _change_mouse_cursor(self, cursor_under_mouse: Optional[bool] = None) -> None:
+        """
+        :param cursor_under_mouse: True if the mouse is pointing at the cursor.
+        """
+
+        if self._left_button_pressed:
+            mouse_cursor = QCursor(Qt.ClosedHandCursor)
+        elif cursor_under_mouse:
+            mouse_cursor = QCursor(Qt.PointingHandCursor)
+        else:
+            mouse_cursor = None
+        self._set_mouse_cursor(mouse_cursor)
+
+    def _check_cursor_under_mouse(self, pos) -> bool:
+        """
+        :param pos: mouse position.
+        :return: True if the mouse is hovering over a cursor.
+        """
+
+        cursor_index = self.cursors.find_cursor_at_point(pos)
+        return self.cursors[cursor_index] is not None
 
     def _get_default_path(self, file_base_name: str, extension: str) -> str:
         """
@@ -203,6 +230,17 @@ class IvcViewer(QwtPlot):
 
         return abs(min_border)
 
+    def _handle_mouse_move_event(self, event: QMouseEvent) -> None:
+        """
+        :param event: mouse event.
+        """
+
+        pos = self.canvas().mapToParent(event.pos())
+        self._change_mouse_cursor(self._check_cursor_under_mouse(pos))
+        if self._left_button_pressed:
+            pos_to_move = self._transform_point_coordinates(pos)
+            self.cursors.move_cursor(pos_to_move)
+
     def _set_axis_titles(self) -> None:
         x_axis_title = QwtText(self._x_title)
         x_axis_title.setFont(self._title_font)
@@ -213,6 +251,22 @@ class IvcViewer(QwtPlot):
         self.setAxisTitle(QwtPlot.yLeft, y_axis_title)
 
         self.cursors.set_axis_labels(self._x_label, self._y_label)
+
+    @staticmethod
+    def _set_mouse_cursor(mouse_cursor: Optional[QCursor] = None) -> None:
+        """
+        :param mouse_cursor: application overrider cursor.
+        """
+
+        app = qApp.instance()
+        while app.overrideCursor():
+            try:
+                app.restoreOverrideCursor()
+            except Exception:
+                pass
+
+        if mouse_cursor:
+            app.setOverrideCursor(mouse_cursor)
 
     def _transform_point_coordinates(self, pos: QPoint) -> Point:
         """
@@ -328,6 +382,19 @@ class IvcViewer(QwtPlot):
 
         self._context_menu_works_with_cursors = enable
 
+    def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        """
+        :param obj: the object for which the event occurred;
+        :param event: event.
+        :return:
+        """
+
+        if obj == self.canvas() and isinstance(event, QMouseEvent) and event.type() == QEvent.MouseMove:
+            self._handle_mouse_move_event(QMouseEvent(event))
+            return True
+
+        return super().eventFilter(obj, event)
+
     @pyqtSlot()
     def export_ivc(self, ask_where_to_export: bool = True) -> None:
         """
@@ -409,26 +476,19 @@ class IvcViewer(QwtPlot):
         for item_name, item in self._items_for_localization.items():
             item["translation"] = kwargs.get(item_name, None)
 
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        """
-        This event handler receives mouse move events for the widget.
-        :param event: mouse move event.
-        """
-
-        if self._left_button_pressed:
-            pos_to_move = self._transform_point_coordinates(event.pos())
-            self.cursors.move_cursor(pos_to_move)
-
     def mousePressEvent(self, event: QMouseEvent) -> None:
         """
         This event handler receives mouse press events for the widget.
         :param event: mouse press event.
         """
 
-        if event.button() == Qt.LeftButton and not self._center_text_marker:
+        event_pos = event.pos()
+        if event.button() == Qt.LeftButton and not self._center_text_marker and \
+                self._check_cursor_under_mouse(event_pos):
             self._left_button_pressed = True
-            pos = self._transform_point_coordinates(event.pos())
-            self.cursors.set_current_cursor(event.pos())
+            self._change_mouse_cursor()
+            pos = self._transform_point_coordinates(event_pos)
+            self.cursors.set_current_cursor(event_pos)
             if self._add_cursor_mode:
                 self.cursors.add_cursor(pos)
             elif self._remove_cursor_mode:
@@ -441,8 +501,9 @@ class IvcViewer(QwtPlot):
         :param event: mouse release event.
         """
 
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton and self._check_cursor_under_mouse(event.pos()):
             self._left_button_pressed = False
+            self._change_mouse_cursor(True)
         event.accept()
 
     def redraw_cursors(self) -> None:
@@ -484,8 +545,10 @@ class IvcViewer(QwtPlot):
                                                     "Images (*.png *.jpg *.bmp *.pdf *.svg)", **options)[0]
         else:
             file_name = default_file_name
+
         if not file_name:
             return
+
         extensions = ".png", ".jpg", ".bmp", ".pdf", ".svg"
         extension = os.path.splitext(file_name)[1]
         if extension not in extensions:

@@ -229,6 +229,17 @@ class IvcCursors:
         self._x_label: Optional[str] = x_label
         self._y_label: Optional[str] = y_label
 
+    def __getitem__(self, index: int) -> Optional[IvcCursor]:
+        """
+        :param index: index of the cursor to be returned.
+        :return: cursor.
+        """
+
+        if isinstance(index, int) and 0 <= index < len(self.cursors):
+            return self._cursors[index]
+
+        return None
+
     @property
     def cursors(self) -> List[IvcCursor]:
         """
@@ -236,26 +247,6 @@ class IvcCursors:
         """
 
         return self._cursors
-
-    def _find_cursor_at_point(self, pos: QPoint) -> Optional[int]:
-        """
-        :param pos: position where to find the cursor.
-        :return: cursor index, at given position.
-        """
-
-        def get_distance(pos_1: QPoint, pos_2: QPoint) -> float:
-            return np.sqrt((pos_1.x() - pos_2.x())**2 + (pos_1.y() - pos_2.y())**2)
-
-        min_distance = None
-        cursor_index = None
-        for index, cursor in enumerate(self._cursors):
-            cursor_pos = cursor.get_cursor_coordinates_in_px()
-            distance = get_distance(pos, cursor_pos)
-            if distance <= self.DISTANCE_FOR_SELECTION:
-                if min_distance is None or min_distance > distance:
-                    min_distance = distance
-                    cursor_index = index
-        return cursor_index
 
     def add_cursor(self, pos: Point) -> None:
         """
@@ -286,6 +277,26 @@ class IvcCursors:
 
         _ = [cursor.detach() for cursor in self._cursors]
 
+    def find_cursor_at_point(self, pos: QPoint) -> Optional[int]:
+        """
+        :param pos: position where to find the cursor.
+        :return: cursor index, at given position.
+        """
+
+        def get_distance(pos_1: QPoint, pos_2: QPoint) -> float:
+            return np.sqrt((pos_1.x() - pos_2.x())**2 + (pos_1.y() - pos_2.y())**2)
+
+        min_distance = None
+        cursor_index = None
+        for index, cursor in enumerate(self._cursors):
+            cursor_pos = cursor.get_cursor_coordinates_in_px()
+            distance = get_distance(pos, cursor_pos)
+            if distance <= self.DISTANCE_FOR_SELECTION:
+                if min_distance is None or min_distance > distance:
+                    min_distance = distance
+                    cursor_index = index
+        return cursor_index
+
     def find_cursor_for_context_menu(self, pos: QPoint) -> bool:
         """
         Method finds cursor at given point for context menu work.
@@ -293,7 +304,7 @@ class IvcCursors:
         :return: True if cursor at given position was found otherwise False.
         """
 
-        cursor_index = self._find_cursor_at_point(pos)
+        cursor_index = self.find_cursor_at_point(pos)
         if cursor_index is not None:
             self._current_index = cursor_index
             self.paint_current_cursor()
@@ -367,5 +378,5 @@ class IvcCursors:
         :param pos: position where the cursor should be made current.
         """
 
-        self._current_index = self._find_cursor_at_point(pos)
+        self._current_index = self.find_cursor_at_point(pos)
         self.paint_current_cursor()
