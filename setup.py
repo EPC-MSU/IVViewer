@@ -8,7 +8,7 @@ setup(name="ivviewer",
       author="EPC MSU",
       author_email="info@physlab.ru",
       packages=find_packages(),
-      python_requires=">=3.6, <=3.9.13",
+      python_requires=">=3.6, <=3.8.10",
       install_requires=[
           "dataclasses==0.8; python_version~='3.6.0'",
           "numpy==1.18.1",

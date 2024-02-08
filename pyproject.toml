@@ -11,7 +11,7 @@ authors = [
 description = "A configurable Qt widget that displays IV curves"
 readme = "README-pypi.md"
 license = { file="LICENSE" }
-requires-python = ">=3.6, <=3.9.13"
+requires-python = ">=3.6, <=3.8.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
