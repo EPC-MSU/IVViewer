@@ -46,3 +46,5 @@ window.resize(600, 600)
 window.show()
 app.exec()
 ```
+
+![](https://i.ibb.co/d5xcp7K/example.png)
