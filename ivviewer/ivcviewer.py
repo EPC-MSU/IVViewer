@@ -450,8 +450,8 @@ class IvcViewer(QwtPlot):
 
         x_map = self.__grid.xScaleDiv().ticks(self.__grid.xScaleDiv().MinorTick)
         y_map = self.__grid.yScaleDiv().ticks(self.__grid.yScaleDiv().MinorTick)
-        x_step = min([round(x_map[i + 1] - x_map[i], 2) for i in range(len(x_map) - 1)])
-        y_step = min([round(y_map[i + 1] - y_map[i], 2) for i in range(len(y_map) - 1)])
+        x_step = min([x_map[i + 1] - x_map[i] for i in range(len(x_map) - 1)])
+        y_step = min([y_map[i + 1] - y_map[i] for i in range(len(y_map) - 1)])
         return x_step, y_step
 
     def get_state_adding_cursor(self) -> bool:
