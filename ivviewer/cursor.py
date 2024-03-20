@@ -202,7 +202,7 @@ class IvcCursors:
     """
 
     COLOR_FOR_REST: QColor = QColor(102, 255, 0)
-    COLOR_FOR_SELECTED: QColor = QColor(255, 0, 0)
+    COLOR_FOR_SELECTED: QColor = QColor(102, 255, 0)
     DISTANCE_FOR_SELECTION: int = 3
 
     def __init__(self, ivc_viewer: QwtPlot, font: Optional[QFont] = None, color_for_rest: Optional[QColor] = None,

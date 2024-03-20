@@ -94,9 +94,9 @@ class TestViewer:
         :param window: viewer widget.
         """
 
-        window.plot.enable_context_menu_for_cursors(False)
+        window.plot.enable_context_menu("export_ivc", "save_screenshot")
         window.setToolTip("В контекстном меню не должно быть работы с метками")
-        assert window.plot._context_menu_works_with_cursors is False
+        assert window.plot._enabled_context_menu_items["cursors"] is False
 
     @prepare_test
     def test_7_disable_context_menu(self, window: Viewer) -> None:
@@ -105,7 +105,7 @@ class TestViewer:
         :param window: viewer widget.
         """
 
-        window.plot.enable_context_menu(False)
+        window.plot.disable_context_menu()
         window.setToolTip("Не должно отображаться контекстное меню")
         assert window.plot.contextMenuPolicy() == Qt.NoContextMenu
 
