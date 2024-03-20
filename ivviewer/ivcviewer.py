@@ -127,7 +127,7 @@ class IvcViewer(QwtPlot):
 
         self._items_for_localization: Dict[str, Dict[str, str]] = {
             "add_cursor": {"default": "Добавить метку"},
-            "export_ivc": {"default": "Экспортировать кривые в файл"},
+            "export_ivc": {"default": "Экспортировать сигнатуры в файл"},
             "remove_all_cursors": {"default": "Удалить все метки"},
             "remove_cursor": {"default": "Удалить метку"},
             "save_screenshot": {"default": "Сохранить изображение"},
