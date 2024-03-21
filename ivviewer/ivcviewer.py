@@ -129,15 +129,10 @@ class IvcViewer(QwtPlot):
             "add_cursor": {"default": "Добавить метку"},
             "export_ivc": {"default": "Экспортировать сигнатуры в файл"},
             "remove_all_cursors": {"default": "Удалить все метки"},
-            "remove_cursor": {"default": "Удалить метку"},
-            "save_screenshot": {"default": "Сохранить изображение"},
+            "remove_cursor": {"default": "Удалить метку"}
         }
-        self._enabled_context_menu_items: Dict[str, bool] = {
-            "cursors": True,
-            "export_ivc": True,
-            "save_screenshot": True
-        }
-        self.enable_context_menu("cursors", "export_ivc", "save_screenshot")
+        self.enable_context_menu()
+
         self._left_button_pressed: bool = False
         self._set_axis_titles()
         self._adjust_scale()
@@ -374,20 +369,14 @@ class IvcViewer(QwtPlot):
             self.customContextMenuRequested.disconnect()
         except Exception:
             pass
-        self._enabled_context_menu_items = {item: False for item in self._enabled_context_menu_items}
 
-    def enable_context_menu(self, *args) -> None:
+    def enable_context_menu(self) -> None:
         """
-        :param args: menu items to be activated.
+        Method enables context menu for widget.
         """
-
-        self.disable_context_menu()
 
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
-        for item in args:
-            if item in self._enabled_context_menu_items:
-                self._enabled_context_menu_items[item] = True
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         """
@@ -540,32 +529,6 @@ class IvcViewer(QwtPlot):
 
         self.cursors.remove_current_cursor()
 
-    @pyqtSlot()
-    def save_image(self, ask_where_to_save: bool = True) -> None:
-        """
-        Slot saves graph as image.
-        :param ask_where_to_save: if True, then you need to ask the user where exactly to save the image.
-        """
-
-        default_file_name = self._get_default_path("image", ".png")
-        options = {}
-        if platform.system().lower() != "windows":
-            options["options"] = QFileDialog.DontUseNativeDialog
-        if ask_where_to_save:
-            file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"), default_file_name,
-                                                    "Images (*.png *.jpg *.bmp *.pdf *.svg)", **options)[0]
-        else:
-            file_name = default_file_name
-
-        if not file_name:
-            return
-
-        extensions = ".png", ".jpg", ".bmp", ".pdf", ".svg"
-        extension = os.path.splitext(file_name)[1]
-        if extension not in extensions:
-            file_name += ".png"
-        self.exportTo(file_name)
-
     def set_center_text(self, text: str, font: QFont = None, color: QColor = None) -> None:
         """
         :param text: text to be shown in the center of the widget;
@@ -691,42 +654,34 @@ class IvcViewer(QwtPlot):
         :param pos: position of the context menu event that the widget receives.
         """
 
-        if self._center_text_marker or len(list(filter(lambda x: x, self._enabled_context_menu_items.values()))) == 0:
+        if self._center_text_marker:
             return
 
         menu = QMenu(self)
         non_empty_curves = self.check_non_empty_curves()
         media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media")
 
-        if self._enabled_context_menu_items["save_screenshot"]:
-            action_save_image = QAction(QIcon(os.path.join(media_dir, "save_image.png")),
-                                        self._get_item_label("save_screenshot"), menu)
-            action_save_image.setEnabled(non_empty_curves)
-            action_save_image.triggered.connect(self.save_image)
-            menu.addAction(action_save_image)
+        action_export_ivc = QAction(QIcon(os.path.join(media_dir, "export.png")), self._get_item_label("export_ivc"),
+                                    menu)
+        action_export_ivc.setEnabled(non_empty_curves)
+        action_export_ivc.triggered.connect(self.export_ivc)
+        menu.addAction(action_export_ivc)
 
-        if self._enabled_context_menu_items["export_ivc"]:
-            action_export_ivc = QAction(QIcon(os.path.join(media_dir, "export.png")),
-                                        self._get_item_label("export_ivc"), menu)
-            action_export_ivc.setEnabled(non_empty_curves)
-            action_export_ivc.triggered.connect(self.export_ivc)
-            menu.addAction(action_export_ivc)
+        action_add_cursor = QAction(QIcon(os.path.join(media_dir, "add_cursor.png")),
+                                    self._get_item_label("add_cursor"), menu)
+        action_add_cursor.triggered.connect(partial(self.add_cursor, pos))
+        menu.addAction(action_add_cursor)
+        if not self.cursors.is_empty():
+            if self.cursors.find_cursor_for_context_menu(pos):
+                action_remove_cursor = QAction(QIcon(os.path.join(media_dir, "remove_cursor.png")),
+                                               self._get_item_label("remove_cursor"), menu)
+                action_remove_cursor.triggered.connect(self.remove_cursor)
+                menu.addAction(action_remove_cursor)
+            action_remove_all_cursors = QAction(QIcon(os.path.join(media_dir, "remove_all_cursors.png")),
+                                                self._get_item_label("remove_all_cursors"), menu)
+            action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
+            menu.addAction(action_remove_all_cursors)
 
-        if self._enabled_context_menu_items["cursors"]:
-            action_add_cursor = QAction(QIcon(os.path.join(media_dir, "add_cursor.png")),
-                                        self._get_item_label("add_cursor"), menu)
-            action_add_cursor.triggered.connect(partial(self.add_cursor, pos))
-            menu.addAction(action_add_cursor)
-            if not self.cursors.is_empty():
-                if self.cursors.find_cursor_for_context_menu(pos):
-                    action_remove_cursor = QAction(QIcon(os.path.join(media_dir, "remove_cursor.png")),
-                                                   self._get_item_label("remove_cursor"), menu)
-                    action_remove_cursor.triggered.connect(self.remove_cursor)
-                    menu.addAction(action_remove_cursor)
-                action_remove_all_cursors = QAction(QIcon(os.path.join(media_dir, "remove_all_cursors.png")),
-                                                    self._get_item_label("remove_all_cursors"), menu)
-                action_remove_all_cursors.triggered.connect(self.remove_all_cursors)
-                menu.addAction(action_remove_all_cursors)
         menu.popup(self.mapToGlobal(pos))
 
     def show_legend(self, legend_font: QFont = None) -> None:
