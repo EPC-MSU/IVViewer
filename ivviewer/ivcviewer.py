@@ -197,7 +197,7 @@ class IvcViewer(QwtPlot):
         :param pos: point.
         :return: if True, then the point is inside canvas.
         """
-        
+
         geometry = self.canvas().geometry()
         canvas_left, canvas_right = geometry.x(), geometry.x() + geometry.width()
         canvas_bottom, canvas_up = geometry.y(), geometry.y() + geometry.height()
