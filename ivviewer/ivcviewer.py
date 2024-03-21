@@ -380,6 +380,7 @@ class IvcViewer(QwtPlot):
         Method enables context menu for widget.
         """
 
+        self.disable_context_menu()
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
 
