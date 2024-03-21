@@ -239,11 +239,11 @@ class IvcViewer(QwtPlot):
         geometry = self.canvas().geometry()
         canvas_left, canvas_right = geometry.x(), geometry.x() + geometry.width()
         canvas_bottom, canvas_up = geometry.y(), geometry.y() + geometry.height()
-        if canvas_bottom <= pos.y() <= canvas_up and canvas_left <= pos.x() <= canvas_right:
-            self._change_mouse_cursor(self._check_cursor_under_mouse(pos))
-            if self._left_button_pressed:
-                pos_to_move = self._transform_point_coordinates(pos)
-                self.cursors.move_cursor(pos_to_move)
+        self._change_mouse_cursor(self._check_cursor_under_mouse(pos))
+
+        if canvas_bottom <= pos.y() <= canvas_up and canvas_left <= pos.x() <= canvas_right and self._left_button_pressed:
+            pos_to_move = self._transform_point_coordinates(pos)
+            self.cursors.move_cursor(pos_to_move)
 
     def _set_axis_titles(self) -> None:
         x_axis_title = QwtText(self._x_title)
@@ -663,7 +663,7 @@ class IvcViewer(QwtPlot):
         :param pos: position of the context menu event that the widget receives.
         """
 
-        if self._center_text_marker:
+        if self._center_text_marker or self._left_button_pressed:
             return
 
         menu = QMenu(self)
