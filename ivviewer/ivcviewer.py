@@ -199,7 +199,6 @@ class IvcViewer(QwtPlot):
         """
         
         geometry = self.canvas().geometry()
-        print(pos, geometry)
         canvas_left, canvas_right = geometry.x(), geometry.x() + geometry.width()
         canvas_bottom, canvas_up = geometry.y(), geometry.y() + geometry.height()
         return canvas_bottom <= pos.y() <= canvas_up and canvas_left <= pos.x() <= canvas_right
