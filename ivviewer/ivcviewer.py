@@ -183,7 +183,7 @@ class IvcViewer(QwtPlot):
             mouse_cursor = None
         self._set_mouse_cursor(mouse_cursor)
 
-    def _check_cursor_under_mouse(self, pos) -> bool:
+    def _check_cursor_under_mouse(self, pos: QPoint) -> bool:
         """
         :param pos: mouse position.
         :return: True if the mouse is hovering over a cursor.
@@ -191,6 +191,18 @@ class IvcViewer(QwtPlot):
 
         cursor_index = self.cursors.find_cursor_at_point(pos)
         return self.cursors[cursor_index] is not None
+
+    def _check_point_inside_canvas(self, pos: QPoint) -> bool:
+        """
+        :param pos: point.
+        :return: if True, then the point is inside canvas.
+        """
+        
+        geometry = self.canvas().geometry()
+        print(pos, geometry)
+        canvas_left, canvas_right = geometry.x(), geometry.x() + geometry.width()
+        canvas_bottom, canvas_up = geometry.y(), geometry.y() + geometry.height()
+        return canvas_bottom <= pos.y() <= canvas_up and canvas_left <= pos.x() <= canvas_right
 
     def _get_default_path(self, file_base_name: str, extension: str) -> str:
         """
@@ -236,12 +248,8 @@ class IvcViewer(QwtPlot):
         """
 
         pos = self.canvas().mapToParent(event.pos())
-        geometry = self.canvas().geometry()
-        canvas_left, canvas_right = geometry.x(), geometry.x() + geometry.width()
-        canvas_bottom, canvas_up = geometry.y(), geometry.y() + geometry.height()
         self._change_mouse_cursor(self._check_cursor_under_mouse(pos))
-
-        if canvas_bottom <= pos.y() <= canvas_up and canvas_left <= pos.x() <= canvas_right and self._left_button_pressed:
+        if self._check_point_inside_canvas(pos) and self._left_button_pressed:
             pos_to_move = self._transform_point_coordinates(pos)
             self.cursors.move_cursor(pos_to_move)
 
@@ -663,7 +671,7 @@ class IvcViewer(QwtPlot):
         :param pos: position of the context menu event that the widget receives.
         """
 
-        if self._center_text_marker or self._left_button_pressed:
+        if self._center_text_marker or self._left_button_pressed or not self._check_point_inside_canvas(pos):
             return
 
         menu = QMenu(self)
