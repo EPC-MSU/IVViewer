@@ -9,7 +9,7 @@ from .utils import MouseEvent, prepare_test
 class TestCursor:
 
     @prepare_test
-    def test_1_add_cursor(self, window: Viewer) -> None:
+    def test_add_cursor(self, window: Viewer) -> None:
         """
         Test checks for adding a cursor.
         :param window: viewer widget.
@@ -22,35 +22,7 @@ class TestCursor:
         assert window.plot.cursors._current_index == 1
 
     @prepare_test
-    def test_2_remove_cursor(self, window: Viewer) -> None:
-        """
-        Test checks for removal of current cursor.
-        :param window: viewer widget.
-        """
-
-        window.plot.add_cursor(QPoint(222, 51))
-        window.plot.add_cursor(QPoint(450, 303))
-        window.plot.remove_cursor()
-        window.setToolTip("Должна быть одна неактивная метка (зеленая)")
-        assert len(window.plot.get_list_of_all_cursors()) == 1
-        assert window.plot.cursors._current_index is None
-
-    @prepare_test
-    def test_3_remove_all_cursors(self, window: Viewer) -> None:
-        """
-        Test checks for removal of all cursors.
-        :param window: viewer widget.
-        """
-
-        window.plot.add_cursor(QPoint(222, 51))
-        window.plot.add_cursor(QPoint(450, 303))
-        window.plot.remove_all_cursors()
-        window.setToolTip("Не должно быть ни одной метки")
-        assert len(window.plot.get_list_of_all_cursors()) == 0
-        assert window.plot.cursors._current_index is None
-
-    @prepare_test
-    def test_4_change_current_cursor(self, window: Viewer) -> None:
+    def test_change_current_cursor(self, window: Viewer) -> None:
         """
         Test checks that the current cursor has changed.
         :param window: viewer widget.
@@ -65,22 +37,7 @@ class TestCursor:
         assert window.plot.cursors._current_index == 0
 
     @prepare_test
-    def test_5_no_current_cursor(self, window: Viewer) -> None:
-        """
-        Test checks that if you click in the plot and do not hit any cursor, then none of the cursor will be current
-        cursor.
-        :param window: viewer widget.
-        """
-
-        window.plot.add_cursor(QPoint(222, 51))
-        window.plot.add_cursor(QPoint(450, 303))
-        event = MouseEvent(QPoint(300, 400))
-        window.plot.mousePressEvent(event)
-        window.setToolTip("Должно быть две неактивные метки (зеленые)")
-        assert window.plot.cursors._current_index is None
-
-    @prepare_test
-    def test_6_move_cursor(self, window: Viewer) -> None:
+    def test_move_cursor(self, window: Viewer) -> None:
         """
         Test checks the movement of the current cursor. Current cursor is second cursor (with index 1).
         :param window: viewer widget.
@@ -98,7 +55,50 @@ class TestCursor:
         assert current_cursor.value().x() == x_to_move
         assert current_cursor.value().y() == y_to_move
 
-    def test_7_set_colors_for_cursors(self, display_window: bool) -> None:
+    @prepare_test
+    def test_no_current_cursor(self, window: Viewer) -> None:
+        """
+        Test checks that if you click in the plot and do not hit any cursor, then none of the cursor will be current
+        cursor.
+        :param window: viewer widget.
+        """
+
+        window.plot.add_cursor(QPoint(222, 51))
+        window.plot.add_cursor(QPoint(450, 303))
+        event = MouseEvent(QPoint(300, 400))
+        window.plot.mousePressEvent(event)
+        window.setToolTip("Должно быть две неактивные метки (зеленые)")
+        assert window.plot.cursors._current_index is None
+
+    @prepare_test
+    def test_remove_all_cursors(self, window: Viewer) -> None:
+        """
+        Test checks for removal of all cursors.
+        :param window: viewer widget.
+        """
+
+        window.plot.add_cursor(QPoint(222, 51))
+        window.plot.add_cursor(QPoint(450, 303))
+        window.plot.remove_all_cursors()
+        window.setToolTip("Не должно быть ни одной метки")
+        assert len(window.plot.get_list_of_all_cursors()) == 0
+        assert window.plot.cursors._current_index is None
+
+    @prepare_test
+    def test_remove_cursor(self, window: Viewer) -> None:
+        """
+        Test checks for removal of current cursor.
+        :param window: viewer widget.
+        """
+
+        window.plot.add_cursor(QPoint(222, 51))
+        window.plot.add_cursor(QPoint(450, 303))
+        window.plot.remove_cursor()
+        window.setToolTip("Должна быть одна неактивная метка (зеленая)")
+        assert len(window.plot.get_list_of_all_cursors()) == 1
+        assert window.plot.cursors._current_index is None
+
+    def test_set_colors_for_cursors(self, display_window: bool) -> None:
         """
         Test checks for setting colors for cursors.
         :param display_window: if True then widget will be displayed.
