@@ -130,7 +130,8 @@ class IvcViewer(QwtPlot):
             "add_cursor": {"default": "Добавить метку"},
             "export_ivc": {"default": "Экспортировать сигнатуры в файл"},
             "remove_all_cursors": {"default": "Удалить все метки"},
-            "remove_cursor": {"default": "Удалить метку"}
+            "remove_cursor": {"default": "Удалить метку"},
+            "save_screenshot": {"default": "Сохранить скриншот"}
         }
         self.enable_context_menu()
 
@@ -545,6 +546,27 @@ class IvcViewer(QwtPlot):
 
         self.cursors.remove_current_cursor()
 
+    @pyqtSlot()
+    def save_screenshot(self) -> None:
+        """
+        Slot saves screenshot.
+        """
+
+        default_file_name = self._get_default_path("image", ".png")
+        options = {}
+        if platform.system().lower() != "windows":
+            options["options"] = QFileDialog.DontUseNativeDialog
+        file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"), default_file_name,
+                                                "Images (*.png)", **options)[0]
+        if not file_name:
+            return
+
+        self._dir_path = os.path.dirname(file_name)
+        self.default_path_changed.emit(self._dir_path)
+
+        image = self._owner.grab()
+        image.save(file_name)
+
     def set_center_text(self, text: str, font: QFont = None, color: QColor = None) -> None:
         """
         :param text: text to be shown in the center of the widget;
@@ -682,6 +704,12 @@ class IvcViewer(QwtPlot):
         action_export_ivc.setEnabled(non_empty_curves)
         action_export_ivc.triggered.connect(self.export_ivc)
         menu.addAction(action_export_ivc)
+
+        if self._owner:
+            action_save_screenshot = QAction(QIcon(os.path.join(media_dir, "screen.png")),
+                                             self._get_item_label("save_screenshot"), menu)
+            action_save_screenshot.triggered.connect(self.save_screenshot)
+            menu.addAction(action_save_screenshot)
 
         action_add_cursor = QAction(QIcon(os.path.join(media_dir, "add_cursor.png")),
                                     self._get_item_label("add_cursor"), menu)

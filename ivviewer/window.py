@@ -34,7 +34,7 @@ class Viewer(QWidget):
 
         super().__init__(parent=parent)
         layout = QVBoxLayout(self)
-        self._plot = IvcViewer(self, solid_axis_enabled=solid_axis_enabled, grid_color=grid_color,
+        self._plot = IvcViewer(parent, solid_axis_enabled=solid_axis_enabled, grid_color=grid_color,
                                back_color=back_color, text_color=text_color,
                                color_for_rest_cursors=color_for_rest_cursors,
                                color_for_selected_cursor=color_for_selected_cursor,
