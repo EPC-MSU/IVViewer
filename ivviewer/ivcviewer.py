@@ -708,11 +708,13 @@ class IvcViewer(QwtPlot):
         if self._owner:
             action_save_screenshot = QAction(QIcon(os.path.join(media_dir, "screen.png")),
                                              self._get_item_label("save_screenshot"), menu)
+            action_save_screenshot.setEnabled(non_empty_curves)
             action_save_screenshot.triggered.connect(self.save_screenshot)
             menu.addAction(action_save_screenshot)
 
         action_add_cursor = QAction(QIcon(os.path.join(media_dir, "add_cursor.png")),
                                     self._get_item_label("add_cursor"), menu)
+        action_add_cursor.setEnabled(non_empty_curves)
         action_add_cursor.triggered.connect(partial(self.add_cursor, pos))
         menu.addAction(action_add_cursor)
         if not self.cursors.is_empty():
