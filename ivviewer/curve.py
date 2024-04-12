@@ -63,6 +63,14 @@ class PlotCurve(QwtPlotCurve, QObject):
 
         return self.title().text()
 
+    @property
+    def length(self) -> int:
+        """
+        :return: number of points in the curve.
+        """
+
+        return 0 if self._curve is None else len(self._curve.voltages)
+
     def _set_curve(self, curve: Optional[Curve] = None) -> None:
         """
         :param curve: object with lists of new voltage and current values.

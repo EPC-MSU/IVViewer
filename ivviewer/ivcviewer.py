@@ -9,7 +9,7 @@ from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtLegend, QwtPlot, QwtPlotGrid, QwtPlotMarker, QwtText
 from ivviewer.cursor import IvcCursor, IvcCursors
-from ivviewer.curve import Curve, PlotCurve, Point
+from ivviewer.curve import PlotCurve, Point
 
 
 class IvcViewer(QwtPlot):
@@ -412,12 +412,6 @@ class IvcViewer(QwtPlot):
         :param ask_where_to_export: if True, then you need to ask the user where exactly to export curves.
         """
 
-        def print_to_file(file_, curve_label: str, curve_: Curve) -> None:
-            print(f"\n{curve_label}", file=file_)
-            print(f"{self._x_unit}, {self._y_unit}", file=file_)
-            for voltage, current in zip(curve_.voltages, curve_.currents):
-                print(f"{voltage}, {current}", file=file_)
-
         default_file_name = self._get_default_path("ivc", ".csv")
         options = {}
         if platform.system().lower() != "windows":
@@ -436,10 +430,21 @@ class IvcViewer(QwtPlot):
         self._dir_path = os.path.dirname(file_name)
         self.default_path_changed.emit(self._dir_path)
 
+        not_empty_curves = [curve for curve in self.curves if curve is not None and not curve.is_empty()]
         with open(file_name, "w", encoding="utf-8") as file:
-            for curve in self.curves:
-                if curve is not None and not curve.is_empty():
-                    print_to_file(file, curve.curve_title, curve.curve)
+            column_names = [(f'"{curve.curve_title} Voltage, {self._x_unit}","{curve.curve_title} Current, '
+                             f'{self._y_unit}"') for curve in not_empty_curves]
+            print(",".join(column_names), file=file)
+
+            max_length = max(curve.length for curve in not_empty_curves)
+            for i in range(max_length):
+                curve_values = []
+                for curve in not_empty_curves:
+                    if i < curve.length:
+                        curve_values.append(f"{curve.curve.voltages[i]},{curve.curve.currents[i]}")
+                    else:
+                        curve_values.append(",")
+                print(",".join(curve_values), file=file)
 
     def get_list_of_all_cursors(self) -> List[IvcCursor]:
         """
