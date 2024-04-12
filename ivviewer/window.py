@@ -12,7 +12,8 @@ class Viewer(QWidget):
                  back_color: QColor = None, text_color: QColor = None, color_for_rest_cursors: QColor = None,
                  color_for_selected_cursor: QColor = None, axis_label_enabled: bool = True, axis_font: QFont = None,
                  cursor_font: QFont = None, title_font: QFont = None, x_title: str = None, y_title: str = None,
-                 x_label: str = None, y_label: str = None, accuracy: int = None) -> None:
+                 x_label: str = None, y_label: str = None, x_unit: str = None, y_unit: str = None, accuracy: int = None
+                 ) -> None:
         """
         :param parent: parent widget;
         :param solid_axis_enabled: if True then axes will be shown with solid lines;
@@ -29,6 +30,8 @@ class Viewer(QWidget):
         :param y_title: title for vertical axis;
         :param x_label: short name for horizontal axis;
         :param y_label: short name for vertical axis;
+        :param x_unit: unit of measure for the value along horizontal axis;
+        :param y_unit: unit of measure for the value along vertical axis;
         :param accuracy: the accuracy with which you want to display coordinate values on cursors.
         """
 
@@ -40,7 +43,7 @@ class Viewer(QWidget):
                                color_for_selected_cursor=color_for_selected_cursor,
                                axis_label_enabled=axis_label_enabled, axis_font=axis_font, cursor_font=cursor_font,
                                title_font=title_font, x_title=x_title, y_title=y_title, x_label=x_label,
-                               y_label=y_label, accuracy=accuracy)
+                               y_label=y_label, x_unit=x_unit, y_unit=y_unit, accuracy=accuracy)
         self._plot.curves.clear()
         layout.addWidget(self._plot)
 

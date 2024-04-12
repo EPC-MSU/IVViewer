@@ -22,9 +22,9 @@ class IvcViewer(QwtPlot):
     DEFAULT_TEXT_COLOR: QColor = QColor(255, 0, 0)
     DEFAULT_TITLE_FONT_SIZE: int = 20
     DEFAULT_X_TITLE: str = "Напряжение, В"
-    DEFAULT_X_UNIT: str = "В"
+    DEFAULT_X_UNIT: str = "V"
     DEFAULT_Y_TITLE: str = "Ток, мА"
-    DEFAULT_Y_UNIT: str = "А"
+    DEFAULT_Y_UNIT: str = "A"
     MIN_BORDER_Y: float = 0.5
     MIN_BORDER_X: float = 1.0
     curve_changed: pyqtSignal = pyqtSignal()
@@ -413,7 +413,7 @@ class IvcViewer(QwtPlot):
         """
 
         def print_to_file(file_, curve_label: str, curve_: Curve) -> None:
-            print(f"\n{curve_label}:", file=file_)
+            print(f"\n{curve_label}", file=file_)
             print(f"{self._x_unit}, {self._y_unit}", file=file_)
             for voltage, current in zip(curve_.voltages, curve_.currents):
                 print(f"{voltage}, {current}", file=file_)
@@ -436,7 +436,7 @@ class IvcViewer(QwtPlot):
         self._dir_path = os.path.dirname(file_name)
         self.default_path_changed.emit(self._dir_path)
 
-        with open(file_name, "w") as file:
+        with open(file_name, "w", encoding="utf-8") as file:
             for curve in self.curves:
                 if curve is not None and not curve.is_empty():
                     print_to_file(file, curve.curve_title, curve.curve)

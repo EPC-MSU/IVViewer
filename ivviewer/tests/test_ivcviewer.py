@@ -30,7 +30,7 @@ class TestViewer:
 
         x_values = [-2.5, 2.5]
         y_values = [-0.005, 0.005]
-        curve = window.plot.add_curve()
+        curve = window.plot.add_curve("test_signature")
         curve.set_curve(Curve(x_values, y_values))
 
         dir_to_export = os.path.join(os.path.curdir, "test_results")
@@ -46,7 +46,7 @@ class TestViewer:
 
         with open(os.path.join(dir_to_export, file_name), "r") as file:
             content = file.read()
-        assert content == "\ncurve #1:\nВ, А\n-2.5, -0.005\n2.5, 0.005\n"
+        assert content == "\ntest_signature\nV, A\n-2.5, -0.005\n2.5, 0.005\n"
 
     @prepare_test
     def test_localize(self, window: Viewer) -> None:
