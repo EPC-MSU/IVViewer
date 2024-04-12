@@ -441,7 +441,7 @@ class IvcViewer(QwtPlot):
                 curve_values = []
                 for curve in not_empty_curves:
                     if i < curve.length:
-                        curve_values.append(f"{curve.curve.voltages[i]},{curve.curve.currents[i]}")
+                        curve_values.append(f"{round(curve.curve.voltages[i], 7)},{round(curve.curve.currents[i], 7)}")
                     else:
                         curve_values.append(",")
                 print(",".join(curve_values), file=file)
