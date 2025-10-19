@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass
 import numpy as np
 from PyQt5.QtCore import pyqtSignal, QObject
@@ -81,6 +81,16 @@ class PlotCurve(QwtPlotCurve, QObject):
 
     def clear_curve(self) -> None:
         self.set_curve(None)
+
+    def copy_data_to_dict(self) -> Dict[str, Any]:
+        """
+        :return: curve data copied to dictionary.
+        """
+
+        return {"title": self.curve_title,
+                "length": self.length,
+                "currents": [] if self._curve is None else self._curve.currents[:],
+                "voltages": [] if self._curve is None else self._curve.voltages[:]}
 
     def get_curve(self) -> Optional[Curve]:
         """

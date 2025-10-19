@@ -416,7 +416,8 @@ class IvcViewer(QwtPlot):
         if platform.system().lower() != "windows":
             options["options"] = QFileDialog.DontUseNativeDialog
 
-        not_empty_curves = [curve for curve in self.curves if curve is not None and not curve.is_empty()]
+        not_empty_curves = [curve.copy_data_to_dict() for curve in self.curves
+                            if curve is not None and not curve.is_empty()]
         default_file_name = self._get_default_path("ivc", ".csv")
         if ask_where_to_export:
             file_name = QFileDialog.getSaveFileName(self, self._get_item_label("export_ivc"), default_file_name,
@@ -433,16 +434,16 @@ class IvcViewer(QwtPlot):
         self.default_path_changed.emit(self._dir_path)
 
         with open(file_name, "w", encoding="utf-8") as file:
-            column_names = [(f'"{curve.curve_title} Voltage, {self._x_unit}","{curve.curve_title} Current, '
+            column_names = [(f'"{curve["title"]} Voltage, {self._x_unit}","{curve["title"]} Current, '
                              f'{self._y_unit}"') for curve in not_empty_curves]
             print(",".join(column_names), file=file)
 
-            max_length = max(curve.length for curve in not_empty_curves)
+            max_length = max(curve["length"] for curve in not_empty_curves)
             for i in range(max_length):
                 curve_values = []
                 for curve in not_empty_curves:
-                    if i < curve.length:
-                        curve_values.append(f"{round(curve.curve.voltages[i], 7)},{round(curve.curve.currents[i], 7)}")
+                    if i < curve["length"]:
+                        curve_values.append(f"{round(curve['voltages'][i], 7)},{round(curve['currents'][i], 7)}")
                     else:
                         curve_values.append(",")
                 print(",".join(curve_values), file=file)
