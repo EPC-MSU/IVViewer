@@ -412,10 +412,12 @@ class IvcViewer(QwtPlot):
         :param ask_where_to_export: if True, then you need to ask the user where exactly to export curves.
         """
 
-        default_file_name = self._get_default_path("ivc", ".csv")
         options = {}
         if platform.system().lower() != "windows":
             options["options"] = QFileDialog.DontUseNativeDialog
+
+        not_empty_curves = [curve for curve in self.curves if curve is not None and not curve.is_empty()]
+        default_file_name = self._get_default_path("ivc", ".csv")
         if ask_where_to_export:
             file_name = QFileDialog.getSaveFileName(self, self._get_item_label("export_ivc"), default_file_name,
                                                     "CSV files (*.csv)", **options)[0]
@@ -430,7 +432,6 @@ class IvcViewer(QwtPlot):
         self._dir_path = os.path.dirname(file_name)
         self.default_path_changed.emit(self._dir_path)
 
-        not_empty_curves = [curve for curve in self.curves if curve is not None and not curve.is_empty()]
         with open(file_name, "w", encoding="utf-8") as file:
             column_names = [(f'"{curve.curve_title} Voltage, {self._x_unit}","{curve.curve_title} Current, '
                              f'{self._y_unit}"') for curve in not_empty_curves]
