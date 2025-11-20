@@ -61,11 +61,14 @@ class IvcViewer(QwtPlot):
 
         super().__init__(parent)
         self._owner = owner
-        self._axis_font: QFont = axis_font if isinstance(axis_font, QFont) else QFont("", self.DEFAULT_AXIS_FONT_SIZE)
-        self._grid_color: QColor = grid_color if isinstance(grid_color, QColor) else self.DEFAULT_GRID_COLOR
-        self._text_color: QColor = text_color if isinstance(text_color, QColor) else self.DEFAULT_TEXT_COLOR
-        self._title_font: QFont = title_font if isinstance(title_font, QFont) else \
-            QFont("", self.DEFAULT_TITLE_FONT_SIZE)
+        default_font = QFont()
+        default_font.setPointSize(self.DEFAULT_AXIS_FONT_SIZE)
+        self._axis_font: QFont = axis_font or default_font
+        self._grid_color: QColor = grid_color or self.DEFAULT_GRID_COLOR
+        self._text_color: QColor = text_color or self.DEFAULT_TEXT_COLOR
+        default_font = QFont()
+        default_font.setPointSize(self.DEFAULT_TITLE_FONT_SIZE)
+        self._title_font: QFont = title_font or default_font
 
         self.__grid: QwtPlotGrid = QwtPlotGrid()
         self.__grid.enableXMin(True)
@@ -78,14 +81,14 @@ class IvcViewer(QwtPlot):
         # self.__grid.updateScaleDiv(20, 30)
         self.__grid.attach(self)
 
-        back_color = back_color if isinstance(back_color, QColor) else self.DEFAULT_BACK_COLOR
+        back_color = back_color or self.DEFAULT_BACK_COLOR
         self.setCanvasBackground(QBrush(back_color, Qt.SolidPattern))
         self.canvas().setCursor(QCursor(Qt.ArrowCursor))
         # Initial setup for axis scales
         self._min_border_x: float = abs(float(IvcViewer.MIN_BORDER_X))
         self._min_border_y: float = abs(float(IvcViewer.MIN_BORDER_Y))
-        self._x_scale: float = None
-        self._y_scale: float = None
+        self._x_scale: Optional[float] = None
+        self._y_scale: Optional[float] = None
         # X Axis
         axis_pen = QPen(QBrush(self._grid_color), 2)
         self._xy_axis: QwtPlotMarker = QwtPlotMarker()
@@ -116,10 +119,10 @@ class IvcViewer(QwtPlot):
                                               color_for_selected=color_for_selected_cursor, x_label=x_label,
                                               y_label=y_label, accuracy=accuracy)
         self.curves: List[PlotCurve] = []
-        self._center_text: QwtText = None
-        self._center_text_marker: QwtPlotMarker = None
-        self._lower_text: QwtText = None
-        self._lower_text_marker: QwtPlotMarker = None
+        self._center_text: Optional[QwtText] = None
+        self._center_text_marker: Optional[QwtPlotMarker] = None
+        self._lower_text: Optional[QwtText] = None
+        self._lower_text_marker: Optional[QwtPlotMarker] = None
 
         self._add_cursor_mode: bool = False
         self._remove_cursor_mode: bool = False
@@ -592,8 +595,10 @@ class IvcViewer(QwtPlot):
         _ = [curve.detach() for curve in self.curves]
 
         self._center_text = QwtText(text)
-        self._center_text.setFont(font if isinstance(font, QFont) else QFont("", self.DEFAULT_CENTER_TEXT_FONT_SIZE))
-        self._center_text.setColor(color if isinstance(color, QColor) else self._text_color)
+        default_font = QFont()
+        default_font.setPointSize(self.DEFAULT_CENTER_TEXT_FONT_SIZE)
+        self._center_text.setFont(font or default_font)
+        self._center_text.setColor(color or self._text_color)
         self._center_text_marker = QwtPlotMarker()
         self._center_text_marker.setValue(0, 0)
         self._center_text_marker.setLabel(self._center_text)
@@ -612,8 +617,10 @@ class IvcViewer(QwtPlot):
 
         self.clear_lower_text()  # Clear current text
         self._lower_text = QwtText(text)
-        self._lower_text.setFont(font if isinstance(font, QFont) else QFont("", self.DEFAULT_LOWER_TEXT_FONT_SIZE))
-        self._lower_text.setColor(color if isinstance(color, QColor) else self._grid_color)
+        default_font = QFont()
+        default_font.setPointSize(self.DEFAULT_LOWER_TEXT_FONT_SIZE)
+        self._lower_text.setFont(font or default_font)
+        self._lower_text.setColor(color or self._grid_color)
         self._lower_text.setRenderFlags(Qt.AlignLeft)
         self._lower_text_marker = QwtPlotMarker()
         self._lower_text_marker.setSpacing(10)

@@ -31,7 +31,9 @@ class IvcCursor(QwtPlotMarker):
 
         super().__init__()
         self._accuracy: int = accuracy
-        self._font: QFont = font if isinstance(font, QFont) else QFont("", IvcCursor.DEFAULT_FONT_SIZE)
+        default_font = QFont()
+        default_font.setPointSize(IvcCursor.DEFAULT_FONT_SIZE)
+        self._font: QFont = font or default_font
         self._ivc_viewer: QwtPlot = ivc_viewer
         self._pen_for_cross: QPen = QPen(QBrush(QColor(255, 255, 255)), IvcCursor.DEFAULT_PEN_WIDTH)
         self._x_label: str = x_label if x_label else IvcCursor.DEFAULT_X_LABEL
@@ -68,14 +70,14 @@ class IvcCursor(QwtPlotMarker):
         """
 
         painter.setPen(self._pen_for_cross)
-        painter.setRenderHint(QPainter.Antialiasing, False)
-        x_1 = pos.x() - IvcCursor.CROSS_SIZE
-        x_2 = pos.x() + IvcCursor.CROSS_SIZE
-        y = pos.y()
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        x_1 = int(round(pos.x() - IvcCursor.CROSS_SIZE))
+        x_2 = int(round(pos.x() + IvcCursor.CROSS_SIZE))
+        y = int(round(pos.y()))
         painter.drawLine(x_1, y, x_2, y)
-        x = pos.x()
-        y_1 = pos.y() - IvcCursor.CROSS_SIZE
-        y_2 = pos.y() + IvcCursor.CROSS_SIZE
+        x = int(round(pos.x()))
+        y_1 = int(round(pos.y() - IvcCursor.CROSS_SIZE))
+        y_2 = int(round(pos.y() + IvcCursor.CROSS_SIZE))
         painter.drawLine(x, y_1, x, y_2)
 
     @staticmethod
@@ -154,12 +156,12 @@ class IvcCursor(QwtPlotMarker):
 
     def get_cursor_coordinates_in_px(self) -> QPoint:
         """
-        :return:
+        :return: point with cursor coordinates.
         """
 
         x = self._ivc_viewer.transform(QwtPlot.xBottom, self.value().x()) + self._ivc_viewer.canvas().x()
         y = self._ivc_viewer.transform(QwtPlot.yLeft, self.value().y()) + self._ivc_viewer.canvas().y()
-        return QPoint(x, y)
+        return QPoint(int(x), int(y))
 
     def move(self, pos: Point) -> None:
         """
@@ -222,7 +224,7 @@ class IvcCursors:
         self._color_for_rest: QColor = color_for_rest if isinstance(color_for_rest, QColor) else self.COLOR_FOR_REST
         self._color_for_selected: QColor = color_for_selected if isinstance(color_for_selected, QColor) else \
             self.COLOR_FOR_SELECTED
-        self._current_index: int = None
+        self._current_index: Optional[int] = None
         self._cursors: List[IvcCursor] = []
         self._font: QFont = font
         self._ivc_viewer: QwtPlot = ivc_viewer
@@ -258,6 +260,7 @@ class IvcCursors:
         cursor = IvcCursor(pos, self._ivc_viewer, self._font, self._x_label, self._y_label, self._accuracy)
         cursor.paint(self._color_for_selected)
         cursor.attach(self._ivc_viewer)
+        self._ivc_viewer.replot()
         self._cursors.append(cursor)
         self._current_index = len(self._cursors) - 1
 
@@ -336,11 +339,13 @@ class IvcCursors:
 
         if self._current_index is not None:
             self._cursors[self._current_index].move(pos)
+            self._ivc_viewer.replot()
 
     def paint_current_cursor(self) -> None:
         _ = [cursor.paint(self._color_for_rest) for cursor in self._cursors]
         if self._current_index is not None:
             self._cursors[self._current_index].paint(self._color_for_selected)
+        self._ivc_viewer.replot()
 
     def remove_all_cursors(self) -> None:
         """

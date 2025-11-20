@@ -151,7 +151,9 @@ class TestViewer:
         :param window: viewer widget.
         """
 
-        font = QFont("", 30, -1, True)
+        font = QFont()
+        font.setPointSize(30)
+        font.setItalic(True)
         color = QColor(0, 153, 204)
         text = "В центре должен быть\nвыведен курсивом текст\nсинего цвета"
         window.plot.set_center_text(text, font, color)
@@ -169,7 +171,10 @@ class TestViewer:
         :param window: viewer widget.
         """
 
-        font = QFont("", 20, 3, True)
+        font = QFont()
+        font.setPointSize(20)
+        font.setWeight(3)
+        font.setItalic(True)
         color = QColor(0, 51, 0)
         text = "В нижней части графика должен быть\nкурсивный зеленый текст"
         window.plot.set_lower_text(text, font, color)
