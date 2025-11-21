@@ -4,7 +4,7 @@ from PyQt5.QtCore import QPoint, QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QPainter
 from qwt import QwtPlot, QwtPlotMarker, QwtText
 from qwt.scale_map import QwtScaleMap
-from ivviewer.curve import Point
+from .curve import Point
 
 
 class IvcCursor(QwtPlotMarker):
@@ -138,6 +138,8 @@ class IvcCursor(QwtPlotMarker):
 
         self._ivc_viewer = ivc_viewer
         super().attach(self._ivc_viewer)
+        if self._ivc_viewer:
+            self._ivc_viewer.replot()
 
     def draw(self, painter: QPainter, x_map: QwtScaleMap, y_map: QwtScaleMap, canvas_rect: QRectF) -> None:
         """
@@ -170,6 +172,7 @@ class IvcCursor(QwtPlotMarker):
 
         self.setValue(pos.x, pos.y)
         self.label().setText(self.cursor_text)
+        self._ivc_viewer.replot()
 
     def paint(self, param: Union[QBrush, QColor, QPen], param_for_cross: Union[QBrush, QColor, QPen] = None) -> None:
         """
@@ -184,6 +187,8 @@ class IvcCursor(QwtPlotMarker):
         self.setLinePen(pen)
         if param_for_cross:
             self._pen_for_cross = self._get_pen(param_for_cross)
+
+        self._ivc_viewer.replot()
 
     def set_axis_labels(self, x_label: str, y_label: str) -> None:
         """
@@ -260,7 +265,6 @@ class IvcCursors:
         cursor = IvcCursor(pos, self._ivc_viewer, self._font, self._x_label, self._y_label, self._accuracy)
         cursor.paint(self._color_for_selected)
         cursor.attach(self._ivc_viewer)
-        self._ivc_viewer.replot()
         self._cursors.append(cursor)
         self._current_index = len(self._cursors) - 1
 
@@ -279,6 +283,7 @@ class IvcCursors:
         """
 
         _ = [cursor.detach() for cursor in self._cursors]
+        self._ivc_viewer.replot()
 
     def find_cursor_at_point(self, pos: QPoint) -> Optional[int]:
         """
@@ -339,13 +344,11 @@ class IvcCursors:
 
         if self._current_index is not None:
             self._cursors[self._current_index].move(pos)
-            self._ivc_viewer.replot()
 
     def paint_current_cursor(self) -> None:
         _ = [cursor.paint(self._color_for_rest) for cursor in self._cursors]
         if self._current_index is not None:
             self._cursors[self._current_index].paint(self._color_for_selected)
-        self._ivc_viewer.replot()
 
     def remove_all_cursors(self) -> None:
         """
@@ -365,6 +368,7 @@ class IvcCursors:
             self._cursors[self._current_index].detach()
             self._cursors.pop(self._current_index)
             self._current_index = None
+            self._ivc_viewer.replot()
 
     def set_axis_labels(self, x_label: str, y_label: str) -> None:
         """

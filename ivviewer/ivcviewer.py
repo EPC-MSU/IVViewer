@@ -8,8 +8,8 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot, QCoreApplication as qApp, QEvent,
 from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
 from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
 from qwt import QwtLegend, QwtPlot, QwtPlotGrid, QwtPlotMarker, QwtText
-from ivviewer.cursor import IvcCursor, IvcCursors
-from ivviewer.curve import PlotCurve, Point
+from .cursor import IvcCursor, IvcCursors
+from .curve import PlotCurve, Point
 
 
 class IvcViewer(QwtPlot):
@@ -367,7 +367,7 @@ class IvcViewer(QwtPlot):
 
     def clear_min_borders(self) -> None:
         """
-        Method removes user-specified minimum acceptable axis scales ​​and restores default values.
+        Method removes user-specified minimum acceptable axis scales and restores default values.
         """
 
         self._min_border_x = abs(float(IvcViewer.MIN_BORDER_X))
@@ -380,7 +380,7 @@ class IvcViewer(QwtPlot):
         Method disables context menu for widget.
         """
 
-        self.setContextMenuPolicy(Qt.NoContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.NoContextMenu)
         try:
             self.customContextMenuRequested.disconnect()
         except Exception:
@@ -392,14 +392,14 @@ class IvcViewer(QwtPlot):
         """
 
         self.disable_context_menu()
-        self.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
 
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
         """
         :param obj: the object for which the event occurred;
         :param event: event.
-        :return:
+        :return: True if the event should no longer be processed, otherwise False.
         """
 
         if obj == self.canvas() and isinstance(event, QMouseEvent) and event.type() == QEvent.MouseMove:

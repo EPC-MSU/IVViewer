@@ -5,8 +5,8 @@ File with example how to use Viewer.
 import sys
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication
-from ivviewer.curve import Curve
-from ivviewer.window import Viewer
+from .curve import Curve
+from .window import Viewer
 
 
 if __name__ == "__main__":
