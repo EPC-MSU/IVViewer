@@ -113,6 +113,7 @@ class PlotCurve(QwtPlotCurve, QObject):
 
         self._set_curve(curve)
         self._ivc_viewer._adjust_scale()
+        self._ivc_viewer.replot()
         self.curve_changed.emit()
 
     def set_curve_params(self, param: Union[QBrush, QColor, QPen] = QColor(0, 0, 0, 200)) -> None:

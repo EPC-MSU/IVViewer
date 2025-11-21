@@ -354,6 +354,7 @@ class IvcViewer(QwtPlot):
             self._xy_axis.attach(self)
             _ = [curve.attach(self) for curve in self.curves]
             self.cursors.attach(self)
+            self.replot()
 
     def clear_lower_text(self) -> None:
         """

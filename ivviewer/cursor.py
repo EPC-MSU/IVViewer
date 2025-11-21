@@ -18,8 +18,8 @@ class IvcCursor(QwtPlotMarker):
     DEFAULT_X_LABEL: str = "U"
     DEFAULT_Y_LABEL: str = "I"
 
-    def __init__(self, pos: Point, ivc_viewer: QwtPlot, font: Optional[QFont] = None, x_label: Optional[str] = None,
-                 y_label: Optional[str] = None, accuracy: Optional[int] = None) -> None:
+    def __init__(self, pos: Point, ivc_viewer: Optional[QwtPlot] = None, font: Optional[QFont] = None,
+                 x_label: Optional[str] = None, y_label: Optional[str] = None, accuracy: Optional[int] = None) -> None:
         """
         :param pos: point at which to place cursor;
         :param ivc_viewer: plot on which to place cursor;
@@ -34,7 +34,7 @@ class IvcCursor(QwtPlotMarker):
         default_font = QFont()
         default_font.setPointSize(IvcCursor.DEFAULT_FONT_SIZE)
         self._font: QFont = font or default_font
-        self._ivc_viewer: QwtPlot = ivc_viewer
+        self._ivc_viewer: Optional[QwtPlot] = ivc_viewer
         self._pen_for_cross: QPen = QPen(QBrush(QColor(255, 255, 255)), IvcCursor.DEFAULT_PEN_WIDTH)
         self._x_label: str = x_label if x_label else IvcCursor.DEFAULT_X_LABEL
         self._y_label: str = y_label if y_label else IvcCursor.DEFAULT_Y_LABEL
@@ -138,6 +138,7 @@ class IvcCursor(QwtPlotMarker):
 
         self._ivc_viewer = ivc_viewer
         super().attach(self._ivc_viewer)
+
         if self._ivc_viewer:
             self._ivc_viewer.replot()
 
@@ -161,6 +162,9 @@ class IvcCursor(QwtPlotMarker):
         :return: point with cursor coordinates.
         """
 
+        if self._ivc_viewer is None:
+            return QPoint()
+
         x = self._ivc_viewer.transform(QwtPlot.xBottom, self.value().x()) + self._ivc_viewer.canvas().x()
         y = self._ivc_viewer.transform(QwtPlot.yLeft, self.value().y()) + self._ivc_viewer.canvas().y()
         return QPoint(int(x), int(y))
@@ -172,7 +176,9 @@ class IvcCursor(QwtPlotMarker):
 
         self.setValue(pos.x, pos.y)
         self.label().setText(self.cursor_text)
-        self._ivc_viewer.replot()
+
+        if self._ivc_viewer:
+            self._ivc_viewer.replot()
 
     def paint(self, param: Union[QBrush, QColor, QPen], param_for_cross: Union[QBrush, QColor, QPen] = None) -> None:
         """
@@ -188,7 +194,8 @@ class IvcCursor(QwtPlotMarker):
         if param_for_cross:
             self._pen_for_cross = self._get_pen(param_for_cross)
 
-        self._ivc_viewer.replot()
+        if self._ivc_viewer:
+            self._ivc_viewer.replot()
 
     def set_axis_labels(self, x_label: str, y_label: str) -> None:
         """
@@ -212,9 +219,9 @@ class IvcCursors:
     COLOR_FOR_SELECTED: QColor = QColor(255, 0, 0)
     DISTANCE_FOR_SELECTION: int = 3
 
-    def __init__(self, ivc_viewer: QwtPlot, font: Optional[QFont] = None, color_for_rest: Optional[QColor] = None,
-                 color_for_selected: Optional[QColor] = None, x_label: Optional[str] = None,
-                 y_label: Optional[str] = None, accuracy: Optional[int] = None) -> None:
+    def __init__(self, ivc_viewer: Optional[QwtPlot] = None, font: Optional[QFont] = None,
+                 color_for_rest: Optional[QColor] = None, color_for_selected: Optional[QColor] = None,
+                 x_label: Optional[str] = None, y_label: Optional[str] = None, accuracy: Optional[int] = None) -> None:
         """
         :param ivc_viewer: plot on which to place cursors;
         :param font: font of text at cursors;
@@ -232,7 +239,7 @@ class IvcCursors:
         self._current_index: Optional[int] = None
         self._cursors: List[IvcCursor] = []
         self._font: QFont = font
-        self._ivc_viewer: QwtPlot = ivc_viewer
+        self._ivc_viewer: Optional[QwtPlot] = ivc_viewer
         self._x_label: Optional[str] = x_label
         self._y_label: Optional[str] = y_label
 
@@ -283,7 +290,9 @@ class IvcCursors:
         """
 
         _ = [cursor.detach() for cursor in self._cursors]
-        self._ivc_viewer.replot()
+
+        if self._ivc_viewer:
+            self._ivc_viewer.replot()
 
     def find_cursor_at_point(self, pos: QPoint) -> Optional[int]:
         """
@@ -368,7 +377,9 @@ class IvcCursors:
             self._cursors[self._current_index].detach()
             self._cursors.pop(self._current_index)
             self._current_index = None
-            self._ivc_viewer.replot()
+
+            if self._ivc_viewer:
+                self._ivc_viewer.replot()
 
     def set_axis_labels(self, x_label: str, y_label: str) -> None:
         """
@@ -378,8 +389,10 @@ class IvcCursors:
 
         if x_label:
             self._x_label = x_label
+
         if y_label:
             self._y_label = y_label
+
         _ = [cursor.set_axis_labels(self._x_label, self._y_label) for cursor in self._cursors]
 
     def set_current_cursor(self, pos: QPoint) -> None:
