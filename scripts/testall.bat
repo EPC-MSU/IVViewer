@@ -1,8 +1,9 @@
 cd ..
 setlocal EnableDelayedExpansion
+set PYTHON=python
 if exist venv rd /s/q venv
 
-python -m venv venv
+%PYTHON% -m venv venv
 venv\Scripts\python -m pip install --upgrade pip
 venv\Scripts\python -m pip install -r requirements.txt
 venv\Scripts\python -m pip install flake8 pytest
