@@ -586,7 +586,7 @@ class IvcViewer(QwtPlot):
         :param color: color for text.
         """
 
-        if isinstance(self._center_text, QwtText) and self._center_text == QwtText(text):
+        if isinstance(self._center_text, QwtText) and self._center_text.text() == text:
             # Same text already here
             return
 
@@ -613,7 +613,7 @@ class IvcViewer(QwtPlot):
         :param color: color for text.
         """
 
-        if isinstance(self._lower_text, QwtText) and self._lower_text == text:
+        if isinstance(self._lower_text, QwtText) and self._lower_text.text() == text:
             # Same text already here
             return
 
