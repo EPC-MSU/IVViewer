@@ -365,6 +365,7 @@ class IvcViewer(QwtPlot):
             self._lower_text_marker.detach()
             self._lower_text_marker = None
             self._lower_text = None
+            self.replot()
 
     def clear_min_borders(self) -> None:
         """
@@ -629,6 +630,7 @@ class IvcViewer(QwtPlot):
         self._lower_text_marker.setLabel(self._lower_text)
         self._lower_text_marker.attach(self)
         self._adjust_scale()
+        self.replot()
 
     def set_min_borders(self, min_x: float, min_y: float) -> None:
         """

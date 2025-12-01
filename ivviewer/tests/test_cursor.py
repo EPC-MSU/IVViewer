@@ -28,6 +28,7 @@ class TestCursor:
         :param window: viewer widget.
         """
 
+        window.plot.replot()
         pos = QPoint(222, 51)
         window.plot.add_cursor(pos)
         window.plot.add_cursor(QPoint(450, 303))

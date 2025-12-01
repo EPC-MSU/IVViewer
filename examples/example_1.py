@@ -1,7 +1,12 @@
 import sys
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication
-import ivviewer
+try:
+    import ivviewer
+except ImportError:
+    import os
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    import ivviewer
 
 
 app = QApplication(sys.argv)

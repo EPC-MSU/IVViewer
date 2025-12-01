@@ -21,7 +21,7 @@ PyQt-виджет для отображения ВАХ. Предназначен
    или
 
    ```batch
-   venv\Scripts\python example.py
+   venv\Scripts\python examples\example_1.py
    ```
 
 3. Запустите тесты. Перейдите в папку **scripts** и запустите скрипт **testall.bat**.
@@ -53,7 +53,7 @@ PyQt-виджет для отображения ВАХ. Предназначен
    или
 
    ```bash
-   venv/bin/python example.py
+   venv/bin/python examples/example_1.py
    ```
 
 3. Запустите тесты. Перейдите в папку **scripts** и запустите скрипт **testall.sh**:
