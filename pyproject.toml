@@ -24,7 +24,8 @@ dependencies = [
     "PyQt5>=5.8.2, <=5.15.0; python_version=='3.6'",
     "PyQt5; python_version>'3.6'",
     "PythonQwt==0.8.3; python_version=='3.6'",
-    "PythonQwt; python_version>'3.6'"
+    "PythonQwt; python_version>'3.6'",
+    "setuptools; python_version>='3.12'"
 ]
 
 [project.urls]

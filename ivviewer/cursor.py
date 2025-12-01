@@ -1,6 +1,7 @@
+from distutils.version import StrictVersion
 from typing import List, Optional, Union
 import numpy as np
-from PyQt5.QtCore import QPoint, QPointF, QRectF, Qt
+from PyQt5.QtCore import PYQT_VERSION_STR, QLineF, QPoint, QPointF, QRectF, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QPainter
 from qwt import QwtPlot, QwtPlotMarker, QwtText
 from qwt.scale_map import QwtScaleMap
@@ -71,14 +72,21 @@ class IvcCursor(QwtPlotMarker):
 
         painter.setPen(self._pen_for_cross)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
-        x_1 = int(round(pos.x() - IvcCursor.CROSS_SIZE))
-        x_2 = int(round(pos.x() + IvcCursor.CROSS_SIZE))
-        y = int(round(pos.y()))
-        painter.drawLine(x_1, y, x_2, y)
-        x = int(round(pos.x()))
-        y_1 = int(round(pos.y() - IvcCursor.CROSS_SIZE))
-        y_2 = int(round(pos.y() + IvcCursor.CROSS_SIZE))
-        painter.drawLine(x, y_1, x, y_2)
+        x_1 = pos.x() - IvcCursor.CROSS_SIZE
+        x_2 = pos.x() + IvcCursor.CROSS_SIZE
+        y = pos.y()
+        if StrictVersion(PYQT_VERSION_STR) <= StrictVersion("5.15.0"):
+            painter.drawLine(x_1, y, x_2, y)
+        else:
+            painter.drawLine(QLineF(x_1, y, x_2, y))
+
+        x = pos.x()
+        y_1 = pos.y() - IvcCursor.CROSS_SIZE
+        y_2 = pos.y() + IvcCursor.CROSS_SIZE
+        if StrictVersion(PYQT_VERSION_STR) <= StrictVersion("5.15.0"):
+            painter.drawLine(x, y_1, x, y_2)
+        else:
+            painter.drawLine(QLineF(x, y_1, x, y_2))
 
     @staticmethod
     def _get_brush(param: Union[QBrush, QColor, QPen]) -> QBrush:
