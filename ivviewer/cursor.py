@@ -152,6 +152,12 @@ class IvcCursor(QwtPlotMarker):
         if (pos.x() + label_size.width() + self.spacing() > canvas_rect.width() and
                 pos.x() - label_size.width() - self.spacing() >= canvas_rect.x()):
             alignment = Qt.AlignmentFlag.AlignLeft
+        elif (pos.x() + label_size.width() + self.spacing() > canvas_rect.width() and
+                pos.x() - label_size.width() - self.spacing() < canvas_rect.x()):
+            if canvas_rect.width() - pos.x() < pos.x() - canvas_rect.x():
+                alignment = Qt.AlignmentFlag.AlignLeft
+            else:
+                alignment = Qt.AlignmentFlag.AlignRight
         else:
             alignment = Qt.AlignmentFlag.AlignRight
 
