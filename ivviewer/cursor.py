@@ -42,7 +42,7 @@ class IvcCursor(QwtPlotMarker):
 
         cursor_text = QwtText()
         cursor_text.setFont(self._font)
-        cursor_text.setRenderFlags(Qt.AlignLeft)
+        cursor_text.setRenderFlags(Qt.AlignmentFlag.AlignLeft)
         self.setSpacing(5)
         self.setLineStyle(QwtPlotMarker.Cross)
         self.setLabelAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
@@ -131,9 +131,9 @@ class IvcCursor(QwtPlotMarker):
         """
 
         if isinstance(param, QColor):
-            pen = QPen(QBrush(param), IvcCursor.DEFAULT_PEN_WIDTH, Qt.DotLine)
+            pen = QPen(QBrush(param), IvcCursor.DEFAULT_PEN_WIDTH, Qt.PenStyle.DotLine)
         elif isinstance(param, QBrush):
-            pen = QPen(param, IvcCursor.DEFAULT_PEN_WIDTH, Qt.DotLine)
+            pen = QPen(param, IvcCursor.DEFAULT_PEN_WIDTH, Qt.PenStyle.DotLine)
         elif isinstance(param, QPen):
             pen = param
         else:

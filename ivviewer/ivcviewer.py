@@ -74,16 +74,16 @@ class IvcViewer(QwtPlot):
         self.__grid.enableXMin(True)
         self.__grid.enableYMin(True)
         if solid_axis_enabled:
-            self.__grid.setMajorPen(QPen(self._grid_color, 0, Qt.SolidLine))
+            self.__grid.setMajorPen(QPen(self._grid_color, 0, Qt.PenStyle.SolidLine))
         else:
-            self.__grid.setMajorPen(QPen(QColor(128, 128, 128), 0, Qt.DotLine))
-        self.__grid.setMinorPen(QPen(QColor(128, 128, 128), 0, Qt.DotLine))
+            self.__grid.setMajorPen(QPen(QColor(128, 128, 128), 0, Qt.PenStyle.DotLine))
+        self.__grid.setMinorPen(QPen(QColor(128, 128, 128), 0, Qt.PenStyle.DotLine))
         # self.__grid.updateScaleDiv(20, 30)
         self.__grid.attach(self)
 
         back_color = back_color or self.DEFAULT_BACK_COLOR
-        self.setCanvasBackground(QBrush(back_color, Qt.SolidPattern))
-        self.canvas().setCursor(QCursor(Qt.ArrowCursor))
+        self.setCanvasBackground(QBrush(back_color, Qt.BrushStyle.SolidPattern))
+        self.canvas().setCursor(QCursor(Qt.CursorShape.ArrowCursor))
         # Initial setup for axis scales
         self._min_border_x: float = abs(float(IvcViewer.MIN_BORDER_X))
         self._min_border_y: float = abs(float(IvcViewer.MIN_BORDER_Y))
@@ -180,9 +180,9 @@ class IvcViewer(QwtPlot):
         """
 
         if self._left_button_pressed:
-            mouse_cursor = QCursor(Qt.ClosedHandCursor)
+            mouse_cursor = QCursor(Qt.CursorShape.ClosedHandCursor)
         elif cursor_under_mouse:
-            mouse_cursor = QCursor(Qt.PointingHandCursor)
+            mouse_cursor = QCursor(Qt.CursorShape.PointingHandCursor)
         else:
             mouse_cursor = None
         self._set_mouse_cursor(mouse_cursor)
@@ -404,8 +404,8 @@ class IvcViewer(QwtPlot):
         :return: True if the event should no longer be processed, otherwise False.
         """
 
-        if obj == self.canvas() and isinstance(event, QMouseEvent) and event.type() == QEvent.MouseMove:
-            self._handle_mouse_move_event(QMouseEvent(event))
+        if obj == self.canvas() and isinstance(event, QMouseEvent) and event.type() == QEvent.Type.MouseMove:
+            self._handle_mouse_move_event(event)
             return True
 
         return super().eventFilter(obj, event)
@@ -417,9 +417,9 @@ class IvcViewer(QwtPlot):
         :param ask_where_to_export: if True, then you need to ask the user where exactly to export curves.
         """
 
-        options = {}
+        options = dict()
         if platform.system().lower() != "windows":
-            options["options"] = QFileDialog.DontUseNativeDialog
+            options["options"] = QFileDialog.Option.DontUseNativeDialog
 
         not_empty_curves = [curve.copy_data_to_dict() for curve in self.curves
                             if curve is not None and not curve.is_empty()]
@@ -508,7 +508,7 @@ class IvcViewer(QwtPlot):
         """
 
         event_pos = event.pos()
-        if event.button() == Qt.LeftButton and not self._center_text_marker:
+        if event.button() == Qt.MouseButton.LeftButton and not self._center_text_marker:
             self.cursors.set_current_cursor(event_pos)
             cursor_under_mouse = self._check_cursor_under_mouse(event_pos)
             if self._add_cursor_mode and not cursor_under_mouse:
@@ -530,7 +530,7 @@ class IvcViewer(QwtPlot):
         :param event: mouse release event.
         """
 
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self._left_button_pressed = False
             self._change_mouse_cursor(self._check_cursor_under_mouse(event.pos()))
         event.accept()
@@ -567,7 +567,7 @@ class IvcViewer(QwtPlot):
         default_file_name = self._get_default_path("image", ".png")
         options = {}
         if platform.system().lower() != "windows":
-            options["options"] = QFileDialog.DontUseNativeDialog
+            options["options"] = QFileDialog.Option.DontUseNativeDialog
         file_name = QFileDialog.getSaveFileName(self, self._get_item_label("save_screenshot"), default_file_name,
                                                 "Images (*.png)", **options)[0]
         if not file_name:
@@ -623,10 +623,10 @@ class IvcViewer(QwtPlot):
         default_font.setPointSize(self.DEFAULT_LOWER_TEXT_FONT_SIZE)
         self._lower_text.setFont(font or default_font)
         self._lower_text.setColor(color or self._grid_color)
-        self._lower_text.setRenderFlags(Qt.AlignLeft)
+        self._lower_text.setRenderFlags(Qt.AlignmentFlag.AlignLeft)
         self._lower_text_marker = QwtPlotMarker()
         self._lower_text_marker.setSpacing(10)
-        self._lower_text_marker.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        self._lower_text_marker.setLabelAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
         self._lower_text_marker.setLabel(self._lower_text)
         self._lower_text_marker.attach(self)
         self._adjust_scale()
