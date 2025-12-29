@@ -43,10 +43,9 @@ class IvcCursor(QwtPlotMarker):
         cursor_text = QwtText()
         cursor_text.setFont(self._font)
         cursor_text.setRenderFlags(Qt.AlignLeft)
-        self._marker: QwtPlotMarker = QwtPlotMarker()
         self.setSpacing(5)
         self.setLineStyle(QwtPlotMarker.Cross)
-        self.setLabelAlignment(Qt.AlignTop | Qt.AlignRight)
+        self.setLabelAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
         self.setLabel(cursor_text)
         self.move(pos)
 
@@ -103,6 +102,7 @@ class IvcCursor(QwtPlotMarker):
             brush = param.brush()
         else:
             raise TypeError("Invalid type of argument passed. Allowed types: QBrush, QColor and QPen")
+
         return brush
 
     @staticmethod
@@ -120,6 +120,7 @@ class IvcCursor(QwtPlotMarker):
             color = param.color()
         else:
             raise TypeError("Invalid type of argument passed. Allowed types: QBrush, QColor and QPen")
+
         return color
 
     @staticmethod
@@ -137,7 +138,30 @@ class IvcCursor(QwtPlotMarker):
             pen = param
         else:
             raise TypeError("Invalid type of argument passed. Allowed types: QBrush, QColor and QPen")
+
         return pen
+
+    def _set_label_alignment_to_fit_inside_canvas(self, painter: QPainter, pos: QPointF, canvas_rect: QRectF) -> None:
+        """
+        :param painter: painter;
+        :param pos: position of the marker, translated into widget coordinates;
+        :param canvas_rect: contents rectangle of the canvas in painter coordinates.
+        """
+
+        label_size = self.label().textSize(painter.font())
+        if (pos.x() + label_size.width() + self.spacing() > canvas_rect.width() and
+                pos.x() - label_size.width() - self.spacing() >= canvas_rect.x()):
+            alignment = Qt.AlignmentFlag.AlignLeft
+        else:
+            alignment = Qt.AlignmentFlag.AlignRight
+
+        if (pos.y() - label_size.height() - self.spacing() < canvas_rect.y() and
+                pos.y() + label_size.height() + self.spacing() <= canvas_rect.height()):
+            alignment |= Qt.AlignmentFlag.AlignBottom
+        else:
+            alignment |= Qt.AlignmentFlag.AlignTop
+
+        self.setLabelAlignment(alignment)
 
     def attach(self, ivc_viewer: QwtPlot) -> None:
         """
@@ -163,6 +187,7 @@ class IvcCursor(QwtPlotMarker):
         pos = QPointF(x_map.transform(data.xValue), y_map.transform(data.yValue))
         self.drawLines(painter, canvas_rect, pos)
         self._draw_cross(painter, pos)
+        self._set_label_alignment_to_fit_inside_canvas(painter, pos, canvas_rect)
         self.drawLabel(painter, canvas_rect, pos)
 
     def get_cursor_coordinates_in_px(self) -> QPoint:
