@@ -1,6 +1,6 @@
 import sys
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import QApplication
 try:
     import ivviewer
 except ImportError:

@@ -4,9 +4,9 @@ from datetime import datetime
 from functools import partial
 from typing import Dict, List, Optional, Tuple
 import numpy as np
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QCoreApplication as qApp, QEvent, QObject, QPoint, Qt
-from PyQt5.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
-from PyQt5.QtWidgets import QAction, QFileDialog, QMenu
+from PyQt6.QtCore import pyqtSignal, pyqtSlot, QCoreApplication as qApp, QEvent, QObject, QPoint, Qt
+from PyQt6.QtGui import QAction, QBrush, QColor, QCursor, QFont, QIcon, QMouseEvent, QPen
+from PyQt6.QtWidgets import QFileDialog, QMenu
 from qwt import QwtLegend, QwtPlot, QwtPlotGrid, QwtPlotMarker, QwtText
 from .cursor import IvcCursor, IvcCursors
 from .curve import PlotCurve, Point

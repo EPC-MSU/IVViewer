@@ -1,5 +1,5 @@
-from PyQt5.QtGui import QColor, QFont
-from PyQt5.QtWidgets import QVBoxLayout, QWidget
+from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtWidgets import QVBoxLayout, QWidget
 from .ivcviewer import IvcViewer
 
 

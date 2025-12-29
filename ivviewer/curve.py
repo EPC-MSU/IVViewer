@@ -1,8 +1,8 @@
 from typing import Any, Dict, List, Optional, Union
 from dataclasses import dataclass
 import numpy as np
-from PyQt5.QtCore import pyqtSignal, QObject
-from PyQt5.QtGui import QBrush, QColor, QPen
+from PyQt6.QtCore import pyqtSignal, QObject
+from PyQt6.QtGui import QBrush, QColor, QPen
 from qwt import QwtPlot, QwtPlotCurve
 
 

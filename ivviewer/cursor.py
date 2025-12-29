@@ -1,8 +1,8 @@
 from distutils.version import StrictVersion
 from typing import List, Optional, Union
 import numpy as np
-from PyQt5.QtCore import PYQT_VERSION_STR, QLineF, QPoint, QPointF, QRectF, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QPen, QPainter
+from PyQt6.QtCore import PYQT_VERSION_STR, QLineF, QPoint, QPointF, QRectF, Qt
+from PyQt6.QtGui import QBrush, QColor, QFont, QPen, QPainter
 from qwt import QwtPlot, QwtPlotMarker, QwtText
 from qwt.scale_map import QwtScaleMap
 from .curve import Point
