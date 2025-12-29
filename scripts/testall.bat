@@ -1,6 +1,6 @@
 cd ..
 setlocal EnableDelayedExpansion
-set PYTHON=c:\python\python312\python
+set PYTHON=python
 if exist venv rd /s/q venv
 
 %PYTHON% -m venv venv
