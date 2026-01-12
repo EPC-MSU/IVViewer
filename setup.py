@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 
 setup(name="ivviewer",
-      version="1.0.5",
+      version="1.0.6",
       description="A configurable Qt widget that displays IV curves",
       url="https://gitlab.ximc.ru/eyepoint/ivviewer",
       author="EPC MSU",
