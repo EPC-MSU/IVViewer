@@ -292,8 +292,8 @@ class IvcViewer(QwtPlot):
 
         pos_x = pos.x() - self.canvas().x()
         pos_y = pos.y() - self.canvas().y()
-        x = np.round(self.invTransform(QwtPlot.xBottom, pos_x), 2)
-        y = np.round(self.invTransform(QwtPlot.yLeft, pos_y), 2)
+        x = self.invTransform(QwtPlot.xBottom, pos_x)
+        y = self.invTransform(QwtPlot.yLeft, pos_y)
         return Point(x, y)
 
     def _update_align_lower_text(self, x_scale: float, y_scale: float) -> None:
