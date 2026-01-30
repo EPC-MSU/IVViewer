@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
         self.button_show_low_text.clicked.connect(self._show_lower_text)
 
     def _create_viewer(self):
-        self.viewer = ivviewer.Viewer(self)
+        self.viewer = ivviewer.Viewer(self, accuracy=3)
         self.viewer.plot.set_x_axis_title("Название оси X")
         self.viewer.plot.set_y_axis_title("Название оси Y")
         self.viewer.plot.set_scale(6.0, 15.0)

@@ -10,7 +10,7 @@ except ImportError:
 
 
 app = QApplication(sys.argv)
-window = ivviewer.Viewer()
+window = ivviewer.Viewer(accuracy=2)
 window.plot.set_x_axis_title("Название оси X")
 window.plot.set_y_axis_title("Название оси Y")
 window.plot.set_scale(6.0, 15.0)
